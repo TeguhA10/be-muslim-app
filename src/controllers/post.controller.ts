@@ -177,6 +177,50 @@ export class PostController {
     }
   }
 
+  static async restorePost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        sendError(res, 'Sesi tidak sah. Silakan login kembali.', null, 401);
+        return;
+      }
+      const postId = req.params.id as string;
+      await PostService.restorePost(userId, postId);
+      sendSuccess(res, 'Postingan berhasil dipulihkan!');
+    } catch (error: any) {
+      next(error);
+    }
+  }
+
+  static async getTrashPosts(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        sendError(res, 'Sesi tidak sah. Silakan login kembali.', null, 401);
+        return;
+      }
+      const posts = await PostService.getTrashPosts(userId);
+      sendSuccess(res, 'Daftar sampah postingan berhasil dimuat', { posts });
+    } catch (error: any) {
+      next(error);
+    }
+  }
+
+  static async permanentDeletePost(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        sendError(res, 'Sesi tidak sah. Silakan login kembali.', null, 401);
+        return;
+      }
+      const postId = req.params.id as string;
+      await PostService.permanentDeletePost(userId, postId);
+      sendSuccess(res, 'Postingan berhasil dihapus secara permanen.');
+    } catch (error: any) {
+      next(error);
+    }
+  }
+
   static async getCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const categories = await PostService.getCategories();

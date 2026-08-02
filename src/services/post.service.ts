@@ -103,7 +103,7 @@ export class PostService {
     const params: any[] = [currentUserId || null];
     let paramIndex = 2;
 
-    let whereClause = 'WHERE 1=1';
+    let whereClause = 'WHERE p.deleted_at IS NULL AND p.is_purged = FALSE';
 
     if (authorId) {
       whereClause += ` AND p.user_id = $${paramIndex}`;
@@ -207,6 +207,11 @@ export class PostService {
   }
 
   static async toggleLike(userId: string, postId: string) {
+    const postCheck = await pool.query('SELECT id FROM posts WHERE id = $1 AND deleted_at IS NULL', [postId]);
+    if (postCheck.rows.length === 0) {
+      throw new Error('Postingan telah dihapus.');
+    }
+
     const existing = await pool.query(
       'SELECT id FROM post_likes WHERE post_id = $1 AND user_id = $2',
       [postId, userId]
@@ -221,7 +226,7 @@ export class PostService {
       // Trigger notification asynchronously
       (async () => {
         try {
-          const postRes = await pool.query('SELECT user_id, content FROM posts WHERE id = $1', [postId]);
+          const postRes = await pool.query('SELECT user_id, content FROM posts WHERE id = $1 AND deleted_at IS NULL', [postId]);
           const userRes = await pool.query('SELECT name FROM users WHERE id = $1', [userId]);
           const post = postRes.rows[0];
           const liker = userRes.rows[0];
@@ -246,6 +251,11 @@ export class PostService {
   }
 
   static async toggleBookmark(userId: string, postId: string) {
+    const postCheck = await pool.query('SELECT id FROM posts WHERE id = $1 AND deleted_at IS NULL', [postId]);
+    if (postCheck.rows.length === 0) {
+      throw new Error('Postingan telah dihapus.');
+    }
+
     const existing = await pool.query(
       'SELECT id FROM post_bookmarks WHERE post_id = $1 AND user_id = $2',
       [postId, userId]
@@ -289,7 +299,7 @@ export class PostService {
       JOIN users u ON u.id = p.user_id
       LEFT JOIN post_likes pl ON pl.post_id = p.id
       LEFT JOIN post_comments pc ON pc.post_id = p.id
-      WHERE pb.user_id = $1
+      WHERE pb.user_id = $1 AND p.deleted_at IS NULL AND p.is_purged = FALSE
       GROUP BY p.id, u.id, pb.created_at
       ORDER BY pb.created_at DESC
       LIMIT $2 OFFSET $3
@@ -328,7 +338,7 @@ export class PostService {
       JOIN users u ON u.id = p.user_id
       LEFT JOIN post_likes pl ON pl.post_id = p.id
       LEFT JOIN post_comments pc ON pc.post_id = p.id
-      WHERE pl_user.user_id = $1
+      WHERE pl_user.user_id = $1 AND p.deleted_at IS NULL AND p.is_purged = FALSE
       GROUP BY p.id, u.id, pl_user.created_at
       ORDER BY pl_user.created_at DESC
       LIMIT $2 OFFSET $3
@@ -339,6 +349,11 @@ export class PostService {
   }
 
   static async addComment(userId: string, postId: string, content: string, parentId?: string | null) {
+    const postCheck = await pool.query('SELECT id FROM posts WHERE id = $1 AND deleted_at IS NULL', [postId]);
+    if (postCheck.rows.length === 0) {
+      throw new Error('Postingan telah dihapus.');
+    }
+
     const res = await pool.query(
       `INSERT INTO post_comments (post_id, user_id, content, parent_id)
        VALUES ($1, $2, $3, $4)
@@ -422,11 +437,72 @@ export class PostService {
 
   static async deletePost(userId: string, postId: string) {
     const res = await pool.query(
-      'DELETE FROM posts WHERE id = $1 AND user_id = $2 RETURNING id',
+      'UPDATE posts SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL RETURNING id',
       [postId, userId]
     );
     if (res.rows.length === 0) {
       throw new Error('Postingan tidak ditemukan atau Anda tidak memiliki izin untuk menghapusnya.');
+    }
+    return true;
+  }
+
+  static async restorePost(userId: string, postId: string) {
+    const res = await pool.query(
+      'UPDATE posts SET deleted_at = NULL WHERE id = $1 AND user_id = $2 AND deleted_at IS NOT NULL AND is_purged = FALSE RETURNING id',
+      [postId, userId]
+    );
+    if (res.rows.length === 0) {
+      throw new Error('Postingan tidak ditemukan atau telah dihapus secara permanen.');
+    }
+    return true;
+  }
+
+  static async purgeOldDeletedPosts(days: number = 30): Promise<number> {
+    const res = await pool.query(
+      "DELETE FROM posts WHERE (deleted_at IS NOT NULL AND deleted_at < NOW() - INTERVAL '1 day' * $1) OR (is_purged = TRUE AND purged_at < NOW() - INTERVAL '1 day' * $1)",
+      [days]
+    );
+    return res.rowCount ?? 0;
+  }
+
+  static async getTrashPosts(userId: string) {
+    const query = `
+      SELECT 
+        p.id, 
+        p.user_id, 
+        p.content, 
+        p.image_url, 
+        p.category, 
+        p.created_at,
+        p.deleted_at,
+        u.name AS author_name,
+        u.avatar_url AS author_avatar,
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object('id', pm.id, 'media_type', pm.media_type, 'url', pm.url)
+            ) 
+            FROM post_media pm 
+            WHERE pm.post_id = p.id
+          ), 
+          '[]'::json
+        ) AS media_urls
+      FROM posts p
+      JOIN users u ON u.id = p.user_id
+      WHERE p.user_id = $1 AND p.deleted_at IS NOT NULL AND p.is_purged = FALSE
+      ORDER BY p.deleted_at DESC
+    `;
+    const res = await pool.query(query, [userId]);
+    return res.rows;
+  }
+
+  static async permanentDeletePost(userId: string, postId: string) {
+    const res = await pool.query(
+      'UPDATE posts SET is_purged = TRUE, purged_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2 AND deleted_at IS NOT NULL AND is_purged = FALSE RETURNING id',
+      [postId, userId]
+    );
+    if (res.rows.length === 0) {
+      throw new Error('Postingan tidak ditemukan di sampah.');
     }
     return true;
   }

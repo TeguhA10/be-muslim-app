@@ -382,7 +382,7 @@ export class AuthService {
       [userId]
     );
 
-    const postsCountRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM posts WHERE user_id = $1`, [userId]);
+    const postsCountRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM posts WHERE user_id = $1 AND deleted_at IS NULL`, [userId]);
     const todayStr = new Date().toISOString().split('T')[0];
     const prayerLogRes = await pool.query(
       `SELECT COUNT(*)::INT AS count FROM prayer_log WHERE user_id = $1 AND (date = CURRENT_DATE OR date = $2::date) AND completed = true`,
@@ -456,7 +456,7 @@ export class AuthService {
     );
     if (userRes.rows.length === 0) throw new Error('Pengguna tidak ditemukan');
 
-    const postsCountRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM posts WHERE user_id = $1`, [targetUserId]);
+    const postsCountRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM posts WHERE user_id = $1 AND deleted_at IS NULL`, [targetUserId]);
     const followersRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM follows WHERE following_id = $1`, [targetUserId]);
     const followingRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM follows WHERE follower_id = $1`, [targetUserId]);
 
@@ -490,7 +490,7 @@ export class AuthService {
        JOIN users u ON p.user_id = u.id
        LEFT JOIN post_likes pl ON pl.post_id = p.id
        LEFT JOIN post_comments pc ON pc.post_id = p.id
-       WHERE p.user_id = $1
+       WHERE p.user_id = $1 AND p.deleted_at IS NULL
        GROUP BY p.id, u.id
        ORDER BY p.created_at DESC
        LIMIT 30`,

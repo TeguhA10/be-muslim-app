@@ -29,6 +29,9 @@ export interface Post {
   likes_count?: number;
   comments_count?: number;
   is_liked_by_me?: boolean;
+  deleted_at?: Date;
+  is_purged?: boolean;
+  purged_at?: Date;
 }
 
 export interface PostLike {
