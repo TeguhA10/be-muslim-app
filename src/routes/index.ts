@@ -7,6 +7,10 @@ import notificationRoutes from './notification.routes';
 
 const router = Router();
 
+router.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'Muslim Application API v1 is healthy' });
+});
+
 router.use('/auth', authRoutes);
 router.use('/prayer', prayerRoutes);
 router.use('/posts', postRoutes);

@@ -7,6 +7,7 @@ import { upload } from '../middlewares/upload.middleware';
 const router = Router();
 
 router.get('/categories', PostController.getCategories);
+router.get('/upload-signature', authenticateToken, PostController.getUploadSignature);
 router.get('/feed', PostController.getFeed);
 router.get('/bookmarks/all', authenticateToken, PostController.getBookmarks);
 router.get('/likes/all', authenticateToken, PostController.getLikedPosts);

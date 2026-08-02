@@ -5,6 +5,7 @@ import { ENV } from '../config/env';
 import { User } from '../models';
 import { EmailService } from './email.service';
 import { NotificationService } from './notification.service';
+import { getLocalDateStr } from '../utils/date';
 
 function generate6DigitOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -383,7 +384,7 @@ export class AuthService {
     );
 
     const postsCountRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM posts WHERE user_id = $1 AND deleted_at IS NULL`, [userId]);
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr();
     const prayerLogRes = await pool.query(
       `SELECT COUNT(*)::INT AS count FROM prayer_log WHERE user_id = $1 AND (date = CURRENT_DATE OR date = $2::date) AND completed = true`,
       [userId, todayStr]

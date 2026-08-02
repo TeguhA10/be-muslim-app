@@ -4,34 +4,76 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import routes from './routes';
 import { errorHandler } from './middlewares/error.middleware';
+import { sanitizeInputs } from './middlewares/sanitizer.middleware';
 
 const app: Express = express();
 
-// Security Middlewares
-app.use(helmet());
-app.use(cors());
+// 1. Hardened Security Headers (OWASP Security Standards)
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Mobile API backend
+    crossOriginEmbedderPolicy: false,
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+  })
+);
 
-// Rate Limiter
-const limiter = rateLimit({
+// 2. Strict CORS Configuration
+const allowedOrigins = (process.env.CORS_ORIGIN || '*').split(',');
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Access blocked by CORS Policy'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
+// 3. Tiered Rate Limiters (OWASP API4:2023 Unrestricted Resource Consumption Protection)
+const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // Limit each IP to 200 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.',
+  max: 300, // 300 requests per IP per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Terlalu banyak permintaan dari IP ini, silakan coba beberapa saat lagi.' },
 });
-app.use(limiter);
 
-// Body Parser
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 15, // Max 15 attempts for sensitive auth endpoints (Login/Register/OTP)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Batas percobaan login/OTP terlampaui. Silakan coba lagi dalam 15 menit.' },
+});
 
-// Health Check
+app.use(globalLimiter);
+app.use('/api/v1/auth', authLimiter);
+
+// 4. Body Parsers
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// 5. Input Sanitizer (XSS Attack Guard)
+app.use(sanitizeInputs);
+
+// 6. Health Check Endpoints
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'Muslim Application API is running' });
+  res.status(200).json({ status: 'OK', message: 'Muslim Application API is running safely', timestamp: new Date().toISOString() });
 });
 
-// API v1 Routes
+// 7. API v1 Routes
 app.use('/api/v1', routes);
 
-// Global Error Handler
+// 8. Global Error Handler
 app.use(errorHandler);
 
 export default app;

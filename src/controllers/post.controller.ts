@@ -229,4 +229,15 @@ export class PostController {
       next(error);
     }
   }
+
+  static async getUploadSignature(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const folder = (req.query.folder as string) || 'muslim_app/posts';
+      const signatureData = CloudinaryService.generateUploadSignature(folder);
+      sendSuccess(res, 'Upload signature generated successfully', signatureData);
+    } catch (error: any) {
+      next(error);
+    }
+  }
 }
+

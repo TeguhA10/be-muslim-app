@@ -4,6 +4,8 @@ import { pool } from '../config/database';
 import { sendSuccess, sendError } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
+import { getLocalDateStr } from '../utils/date';
+
 export class PrayerController {
   static async getPrayerTimes(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -48,7 +50,7 @@ export class PrayerController {
   static async getPrayerLogs(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
-      const dateStr = (req.query.date as string) || new Date().toISOString().split('T')[0];
+      const dateStr = (req.query.date as string) || getLocalDateStr();
 
       const result = await pool.query(
         `SELECT prayer_name, completed FROM prayer_log WHERE user_id = $1 AND date = $2`,

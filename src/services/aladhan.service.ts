@@ -3,13 +3,15 @@ import { ENV } from '../config/env';
 import { redisClient } from '../config/redis';
 import { logger } from '../utils/logger';
 
+import { getLocalDateStr } from '../utils/date';
+
 export class AladhanService {
   /**
    * Fetch daily prayer times by latitude and longitude.
    * Cached in Redis for 24 hours per location & date.
    */
   static async getPrayerTimes(latitude: number, longitude: number, method = 'KEMENAG', dateStr?: string) {
-    const todayStr = dateStr || new Date().toISOString().split('T')[0];
+    const todayStr = dateStr || getLocalDateStr();
     const cacheKey = `prayer_times:${latitude.toFixed(2)}:${longitude.toFixed(2)}:${method}:${todayStr}`;
 
     // 1. Try fetching from Redis cache
@@ -63,7 +65,7 @@ export class AladhanService {
    * Fetch Hijri Date details for given date
    */
   static async getHijriDate(dateStr?: string) {
-    const today = dateStr || new Date().toISOString().split('T')[0];
+    const today = dateStr || getLocalDateStr();
     const cacheKey = `hijri_date:${today}`;
 
     try {

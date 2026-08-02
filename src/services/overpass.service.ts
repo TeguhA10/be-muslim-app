@@ -105,9 +105,13 @@ export class OverpassService {
     try {
       const dbResult = await pool.query(
         `SELECT m.id, m.name, m.latitude, m.longitude, m.address,
-                (6371 * acos(cos(radians($1)) * cos(radians(m.latitude)) * cos(radians(m.longitude) - radians($2)) + sin(radians($1)) * sin(radians(m.latitude))))::numeric(10,2) AS distance_km
+                CASE 
+                  WHEN m.location IS NOT NULL THEN (ST_Distance(m.location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography) / 1000.0)::numeric(10,2)
+                  ELSE (6371 * acos(cos(radians($1)) * cos(radians(m.latitude)) * cos(radians(m.longitude) - radians($2)) + sin(radians($1)) * sin(radians(m.latitude))))::numeric(10,2)
+                END AS distance_km
          FROM masjid m
-         WHERE (6371 * acos(cos(radians($1)) * cos(radians(m.latitude)) * cos(radians(m.longitude) - radians($2)) + sin(radians($1)) * sin(radians(m.latitude)))) <= 15
+         WHERE (m.location IS NOT NULL AND ST_DWithin(m.location, ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography, 15000))
+            OR (6371 * acos(cos(radians($1)) * cos(radians(m.latitude)) * cos(radians(m.longitude) - radians($2)) + sin(radians($1)) * sin(radians(m.latitude)))) <= 15
          ORDER BY distance_km ASC
          LIMIT 25`,
         [latitude, longitude]

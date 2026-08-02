@@ -178,8 +178,8 @@ export class PostService {
         p.created_at,
         u.name AS author_name,
         u.avatar_url AS author_avatar,
-        COUNT(DISTINCT pl.id)::INT AS likes_count,
-        COUNT(DISTINCT pc.id)::INT AS comments_count,
+        COALESCE(p.like_count, 0)::INT AS likes_count,
+        COALESCE(p.comment_count, 0)::INT AS comments_count,
         EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = $1) AS is_liked_by_me,
         EXISTS(SELECT 1 FROM post_bookmarks WHERE post_id = p.id AND user_id = $1) AS is_bookmarked_by_me,
         COALESCE(
@@ -194,10 +194,7 @@ export class PostService {
         ) AS media_urls
       FROM posts p
       JOIN users u ON u.id = p.user_id
-      LEFT JOIN post_likes pl ON pl.post_id = p.id
-      LEFT JOIN post_comments pc ON pc.post_id = p.id
       ${whereClause}
-      GROUP BY p.id, u.id
       ${orderByClause}
       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
     `;
@@ -219,9 +216,11 @@ export class PostService {
 
     if (existing.rows.length > 0) {
       await pool.query('DELETE FROM post_likes WHERE post_id = $1 AND user_id = $2', [postId, userId]);
+      await pool.query('UPDATE posts SET like_count = GREATEST(0, like_count - 1) WHERE id = $1', [postId]);
       return { liked: false };
     } else {
       await pool.query('INSERT INTO post_likes (post_id, user_id) VALUES ($1, $2)', [postId, userId]);
+      await pool.query('UPDATE posts SET like_count = like_count + 1 WHERE id = $1', [postId]);
 
       // Trigger notification asynchronously
       (async () => {
@@ -360,6 +359,8 @@ export class PostService {
        RETURNING *`,
       [postId, userId, content, parentId || null]
     );
+
+    await pool.query('UPDATE posts SET comment_count = comment_count + 1 WHERE id = $1', [postId]);
 
     const newComment = res.rows[0];
 

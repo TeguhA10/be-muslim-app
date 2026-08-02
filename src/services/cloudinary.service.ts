@@ -118,4 +118,29 @@ export class CloudinaryService {
       uploadStream.end(compressedBuffer);
     });
   }
+
+  /**
+   * Generate Cloudinary Presigned Signature for Direct Client Uploads (Bypasses Backend Bandwidth Bottleneck)
+   */
+  static generateUploadSignature(folder: string = 'muslim_app/posts') {
+    const cloud = getCloudinary();
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const paramsToSign = {
+      timestamp,
+      folder,
+    };
+    const signature = cloud.utils.api_sign_request(
+      paramsToSign,
+      process.env.CLOUDINARY_API_SECRET || ENV.CLOUDINARY.API_SECRET
+    );
+
+    return {
+      signature,
+      timestamp,
+      apiKey: process.env.CLOUDINARY_API_KEY || ENV.CLOUDINARY.API_KEY,
+      cloudName: process.env.CLOUDINARY_CLOUD_NAME || ENV.CLOUDINARY.CLOUD_NAME,
+      folder,
+    };
+  }
 }
+
