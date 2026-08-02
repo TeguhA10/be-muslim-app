@@ -103,13 +103,20 @@ export class PostService {
     let whereClause = 'WHERE 1=1';
 
     if (media === 'gambar_saja') {
-      whereClause += ` AND (p.image_url IS NOT NULL AND p.image_url != '')`;
+      whereClause += ` AND ((p.image_url IS NOT NULL AND p.image_url != '') OR EXISTS (SELECT 1 FROM post_media pm WHERE pm.post_id = p.id AND pm.url IS NOT NULL AND pm.url != ''))`;
     }
 
     if (category && category !== 'semua') {
-      whereClause += ` AND p.category = $${paramIndex}`;
-      params.push(category);
-      paramIndex++;
+      const catList = category.split(',').map((c) => c.trim()).filter(Boolean);
+      if (catList.length === 1) {
+        whereClause += ` AND p.category = $${paramIndex}`;
+        params.push(catList[0]);
+        paramIndex++;
+      } else if (catList.length > 1) {
+        whereClause += ` AND p.category = ANY($${paramIndex}::text[])`;
+        params.push(catList);
+        paramIndex++;
+      }
     }
 
     if (search && search.trim()) {
@@ -118,12 +125,22 @@ export class PostService {
       paramIndex++;
     }
 
-    let orderByClause = 'ORDER BY p.created_at DESC';
-    if (sort === 'terpopuler') {
-      orderByClause = 'ORDER BY likes_count DESC, comments_count DESC, p.created_at DESC';
-    } else if (sort === 'paling_banyak_diskusi') {
-      orderByClause = 'ORDER BY comments_count DESC, likes_count DESC, p.created_at DESC';
+    const sortList = (sort || 'terbaru').split(',').map((s) => s.trim()).filter(Boolean);
+    const orderParts: string[] = [];
+
+    if (sortList.includes('terpopuler')) {
+      orderParts.push('likes_count DESC');
     }
+    if (sortList.includes('paling_banyak_diskusi')) {
+      orderParts.push('comments_count DESC');
+    }
+    if (sortList.includes('terbaru') || orderParts.length === 0) {
+      orderParts.push('p.created_at DESC');
+    } else {
+      orderParts.push('p.created_at DESC');
+    }
+
+    const orderByClause = `ORDER BY ${orderParts.join(', ')}`;
 
     const limitParamIndex = paramIndex;
     params.push(limit);
