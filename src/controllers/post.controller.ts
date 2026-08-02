@@ -60,14 +60,16 @@ export class PostController {
   static async getFeed(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.id || (req.query.user_id as any) || '11111111-1111-1111-1111-111111111111';
+      const authorId = (req.query.author_id as string) || (req.query.target_user_id as string) || undefined;
       const limit = parseInt((req.query.limit as string) || '20', 10);
       const offset = parseInt((req.query.offset as string) || '0', 10);
       const sort = (req.query.sort as any) || 'terbaru';
       const media = (req.query.media as any) || 'semua';
       const search = (req.query.search as string) || '';
       const category = (req.query.category as string) || 'semua';
+      const followingOnly = req.query.following === 'true' || req.query.following_only === 'true';
 
-      const feed = await PostService.getFeed(userId, limit, offset, sort, media, search, category);
+      const feed = await PostService.getFeed(userId, limit, offset, sort, media, search, category, followingOnly, authorId);
       sendSuccess(res, 'Feed fetched successfully', feed);
     } catch (error: any) {
       next(error);
@@ -111,7 +113,9 @@ export class PostController {
   static async getBookmarks(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
-      const bookmarks = await PostService.getBookmarks(userId);
+      const limit = parseInt((req.query.limit as string) || '20', 10);
+      const offset = parseInt((req.query.offset as string) || '0', 10);
+      const bookmarks = await PostService.getBookmarks(userId, limit, offset);
       sendSuccess(res, 'Bookmarked posts fetched successfully', bookmarks);
     } catch (error: any) {
       next(error);
@@ -121,7 +125,9 @@ export class PostController {
   static async getLikedPosts(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
-      const likedPosts = await PostService.getLikedPosts(userId);
+      const limit = parseInt((req.query.limit as string) || '20', 10);
+      const offset = parseInt((req.query.offset as string) || '0', 10);
+      const likedPosts = await PostService.getLikedPosts(userId, limit, offset);
       sendSuccess(res, 'Liked posts fetched successfully', likedPosts);
     } catch (error: any) {
       next(error);

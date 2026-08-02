@@ -389,6 +389,8 @@ export class AuthService {
     );
 
     const savedMasjidsRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM masjid_bookmarks WHERE user_id = $1`, [userId]);
+    const followersRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM follows WHERE following_id = $1`, [userId]);
+    const followingRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM follows WHERE follower_id = $1`, [userId]);
 
     return {
       user: userRes.rows[0],
@@ -397,6 +399,8 @@ export class AuthService {
         posts_count: postsCountRes.rows[0]?.count || 0,
         completed_prayers_today: prayerLogRes.rows[0]?.count || 0,
         saved_masjids_count: savedMasjidsRes.rows[0]?.count || 0,
+        followers_count: followersRes.rows[0]?.count || 0,
+        following_count: followingRes.rows[0]?.count || 0,
       },
     };
   }
@@ -452,6 +456,17 @@ export class AuthService {
     if (userRes.rows.length === 0) throw new Error('Pengguna tidak ditemukan');
 
     const postsCountRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM posts WHERE user_id = $1`, [targetUserId]);
+    const followersRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM follows WHERE following_id = $1`, [targetUserId]);
+    const followingRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM follows WHERE follower_id = $1`, [targetUserId]);
+
+    let isFollowing = false;
+    if (currentUserId) {
+      const followCheck = await pool.query(
+        `SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = $2`,
+        [currentUserId, targetUserId]
+      );
+      isFollowing = followCheck.rows.length > 0;
+    }
 
     const postsRes = await pool.query(
       `SELECT p.id, p.user_id, p.content, p.image_url, p.category, p.created_at,
@@ -459,7 +474,17 @@ export class AuthService {
               COUNT(DISTINCT pl.id)::INT AS likes_count,
               COUNT(DISTINCT pc.id)::INT AS comments_count,
               EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.id AND user_id = $2) AS is_liked_by_me,
-              EXISTS(SELECT 1 FROM post_bookmarks WHERE post_id = p.id AND user_id = $2) AS is_bookmarked_by_me
+              EXISTS(SELECT 1 FROM post_bookmarks WHERE post_id = p.id AND user_id = $2) AS is_bookmarked_by_me,
+              COALESCE(
+                (
+                  SELECT json_agg(
+                    json_build_object('id', pm.id, 'media_type', pm.media_type, 'url', pm.url)
+                  ) 
+                  FROM post_media pm 
+                  WHERE pm.post_id = p.id
+                ), 
+                '[]'::json
+              ) AS media_urls
        FROM posts p
        JOIN users u ON p.user_id = u.id
        LEFT JOIN post_likes pl ON pl.post_id = p.id
@@ -472,11 +497,140 @@ export class AuthService {
     );
 
     return {
-      user: userRes.rows[0],
+      user: {
+        ...userRes.rows[0],
+        is_following_by_me: isFollowing,
+      },
       stats: {
         posts_count: postsCountRes.rows[0]?.count || 0,
+        followers_count: followersRes.rows[0]?.count || 0,
+        following_count: followingRes.rows[0]?.count || 0,
       },
       posts: postsRes.rows,
     };
   }
+
+  static async toggleFollowUser(followerId: string, targetUserId: string) {
+    if (followerId === targetUserId) {
+      throw new Error('Anda tidak dapat mengikuti akun diri sendiri');
+    }
+
+    const targetUserCheck = await pool.query(`SELECT id FROM users WHERE id = $1`, [targetUserId]);
+    if (targetUserCheck.rows.length === 0) {
+      throw new Error('Pengguna tidak ditemukan');
+    }
+
+    const existingFollow = await pool.query(
+      `SELECT id FROM follows WHERE follower_id = $1 AND following_id = $2`,
+      [followerId, targetUserId]
+    );
+
+    let isFollowing = false;
+    if (existingFollow.rows.length > 0) {
+      await pool.query(`DELETE FROM follows WHERE follower_id = $1 AND following_id = $2`, [
+        followerId,
+        targetUserId,
+      ]);
+      isFollowing = false;
+    } else {
+      await pool.query(
+        `INSERT INTO follows (follower_id, following_id) VALUES ($1, $2)`,
+        [followerId, targetUserId]
+      );
+      isFollowing = true;
+    }
+
+    const followersCountRes = await pool.query(
+      `SELECT COUNT(*)::INT AS count FROM follows WHERE following_id = $1`,
+      [targetUserId]
+    );
+
+    return {
+      is_following: isFollowing,
+      followers_count: followersCountRes.rows[0]?.count || 0,
+    };
+  }
+
+  static async getFollowersList(
+    targetUserId: string,
+    currentUserId?: string | null,
+    limit = 20,
+    offset = 0,
+    search = ''
+  ) {
+    const params: any[] = [targetUserId, currentUserId || null];
+    let searchCondition = '';
+
+    if (search && search.trim()) {
+      searchCondition = ` AND u.name ILIKE $3`;
+      params.push(`%${search.trim()}%`);
+      params.push(limit, offset);
+      const res = await pool.query(
+        `SELECT u.id, u.name, u.avatar_url, u.bio,
+                EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = u.id) AS is_following_by_me
+         FROM follows f
+         JOIN users u ON f.follower_id = u.id
+         WHERE f.following_id = $1 ${searchCondition}
+         ORDER BY f.created_at DESC
+         LIMIT $4 OFFSET $5`,
+        params
+      );
+      return res.rows;
+    } else {
+      params.push(limit, offset);
+      const res = await pool.query(
+        `SELECT u.id, u.name, u.avatar_url, u.bio,
+                EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = u.id) AS is_following_by_me
+         FROM follows f
+         JOIN users u ON f.follower_id = u.id
+         WHERE f.following_id = $1
+         ORDER BY f.created_at DESC
+         LIMIT $3 OFFSET $4`,
+        params
+      );
+      return res.rows;
+    }
+  }
+
+  static async getFollowingList(
+    targetUserId: string,
+    currentUserId?: string | null,
+    limit = 20,
+    offset = 0,
+    search = ''
+  ) {
+    const params: any[] = [targetUserId, currentUserId || null];
+    let searchCondition = '';
+
+    if (search && search.trim()) {
+      searchCondition = ` AND u.name ILIKE $3`;
+      params.push(`%${search.trim()}%`);
+      params.push(limit, offset);
+      const res = await pool.query(
+        `SELECT u.id, u.name, u.avatar_url, u.bio,
+                EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = u.id) AS is_following_by_me
+         FROM follows f
+         JOIN users u ON f.following_id = u.id
+         WHERE f.follower_id = $1 ${searchCondition}
+         ORDER BY f.created_at DESC
+         LIMIT $4 OFFSET $5`,
+        params
+      );
+      return res.rows;
+    } else {
+      params.push(limit, offset);
+      const res = await pool.query(
+        `SELECT u.id, u.name, u.avatar_url, u.bio,
+                EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = u.id) AS is_following_by_me
+         FROM follows f
+         JOIN users u ON f.following_id = u.id
+         WHERE f.follower_id = $1
+         ORDER BY f.created_at DESC
+         LIMIT $3 OFFSET $4`,
+        params
+      );
+      return res.rows;
+    }
+  }
 }
+

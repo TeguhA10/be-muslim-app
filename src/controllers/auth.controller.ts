@@ -208,4 +208,54 @@ export class AuthController {
       next(error);
     }
   }
+
+  static async toggleFollow(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const followerId = req.user?.id;
+      if (!followerId) {
+        sendError(res, 'Anda harus login terlebih dahulu', null, 401);
+        return;
+      }
+      const targetUserId = req.params.id as string;
+      if (!targetUserId) {
+        sendError(res, 'ID pengguna wajib disertakan', null, 400);
+        return;
+      }
+
+      const result = await AuthService.toggleFollowUser(followerId, targetUserId);
+      const message = result.is_following ? 'Berhasil mengikuti pengguna' : 'Berhasil berhenti mengikuti pengguna';
+      sendSuccess(res, message, result);
+    } catch (error: any) {
+      next(error);
+    }
+  }
+
+  static async getFollowers(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const targetUserId = req.params.id as string;
+      const currentUserId = req.user?.id || null;
+      const limit = parseInt((req.query.limit as string) || '20', 10);
+      const offset = parseInt((req.query.offset as string) || '0', 10);
+      const search = (req.query.search as string) || '';
+      const data = await AuthService.getFollowersList(targetUserId, currentUserId, limit, offset, search);
+      sendSuccess(res, 'Daftar pengikut berhasil dimuat', data);
+    } catch (error: any) {
+      next(error);
+    }
+  }
+
+  static async getFollowing(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const targetUserId = req.params.id as string;
+      const currentUserId = req.user?.id || null;
+      const limit = parseInt((req.query.limit as string) || '20', 10);
+      const offset = parseInt((req.query.offset as string) || '0', 10);
+      const search = (req.query.search as string) || '';
+      const data = await AuthService.getFollowingList(targetUserId, currentUserId, limit, offset, search);
+      sendSuccess(res, 'Daftar mengikuti berhasil dimuat', data);
+    } catch (error: any) {
+      next(error);
+    }
+  }
 }
+

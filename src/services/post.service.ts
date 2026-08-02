@@ -95,12 +95,30 @@ export class PostService {
     sort: 'terbaru' | 'terpopuler' | 'paling_banyak_diskusi' = 'terbaru',
     media: 'semua' | 'gambar_saja' = 'semua',
     search = '',
-    category = 'semua'
+    category = 'semua',
+    followingOnly = false,
+    authorId?: string
   ) {
     const params: any[] = [currentUserId || null];
     let paramIndex = 2;
 
     let whereClause = 'WHERE 1=1';
+
+    if (authorId) {
+      whereClause += ` AND p.user_id = $${paramIndex}`;
+      params.push(authorId);
+      paramIndex++;
+    }
+
+    if (followingOnly) {
+      if (currentUserId) {
+        whereClause += ` AND p.user_id IN (SELECT following_id FROM follows WHERE follower_id = $${paramIndex})`;
+        params.push(currentUserId);
+        paramIndex++;
+      } else {
+        whereClause += ` AND 1=0`;
+      }
+    }
 
     if (media === 'gambar_saja') {
       whereClause += ` AND ((p.image_url IS NOT NULL AND p.image_url != '') OR EXISTS (SELECT 1 FROM post_media pm WHERE pm.post_id = p.id AND pm.url IS NOT NULL AND pm.url != ''))`;
@@ -217,7 +235,7 @@ export class PostService {
     }
   }
 
-  static async getBookmarks(userId: string) {
+  static async getBookmarks(userId: string, limit = 20, offset = 0) {
     const query = `
       SELECT 
         p.id, 
@@ -249,13 +267,14 @@ export class PostService {
       WHERE pb.user_id = $1
       GROUP BY p.id, u.id, pb.created_at
       ORDER BY pb.created_at DESC
+      LIMIT $2 OFFSET $3
     `;
 
-    const res = await pool.query(query, [userId]);
+    const res = await pool.query(query, [userId, limit, offset]);
     return res.rows;
   }
 
-  static async getLikedPosts(userId: string) {
+  static async getLikedPosts(userId: string, limit = 20, offset = 0) {
     const query = `
       SELECT 
         p.id, 
@@ -287,9 +306,10 @@ export class PostService {
       WHERE pl_user.user_id = $1
       GROUP BY p.id, u.id, pl_user.created_at
       ORDER BY pl_user.created_at DESC
+      LIMIT $2 OFFSET $3
     `;
 
-    const res = await pool.query(query, [userId]);
+    const res = await pool.query(query, [userId, limit, offset]);
     return res.rows;
   }
 
