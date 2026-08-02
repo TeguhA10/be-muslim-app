@@ -58,3 +58,44 @@ Dokumen ini berisi daftar kendala (Issues) dan rekomendasi solusi teknis untuk m
   1. Tambahkan sanitasi input XSS pada isi postingan dan komentar komunitas.
   2. Konfigurasi `cors` origin secara ketat hanya mengizinkan domain/app resmi.
   3. Implementasikan pemantauan log terpusat (misal Sentry / Datadog / ELK Stack) untuk menangkap runtime error secara real-time.
+
+---
+
+### 6. 🗺️ Geospatial Indexing (PostGIS) & Cursor-Based Pagination
+- **Kategori**: Database & Query Optimization
+- **Deskripsi Masalah**:
+  Penggunaan B-Tree index pada `(latitude, longitude)` kurang efisien untuk pencarian radius 2D lokasi masjid. Selain itu, `OFFSET` pagination pada Feed Komunitas memperlambat kueri seiring bertambahnya jumlah postingan.
+- **Saran Solusi**:
+  1. Aktifkan ekstensi `PostGIS` pada PostgreSQL dan gunakan tipe `GEOGRAPHY(Point, 4326)` dengan **GiST Index**.
+  2. Tambahkan kolom denormalisasi `like_count` dan `comment_count` pada tabel `posts` untuk menghindari kueri `COUNT(*)` live saat feed di-scroll.
+  3. Ubah pagination API dari Offset-based ke **Cursor-Based** (`created_at` / `id` cursor).
+
+---
+
+### 7. 📤 Direct Presigned Media Upload to Cloudinary / Storage
+- **Kategori**: Backend Performance & Bandwidth
+- **Deskripsi Masalah**:
+  Mengunggah file media/gambar postingan melalui server backend Express memakan RAM dan bandwidth server secara signifikan (*bottleneck*).
+- **Saran Solusi**:
+  1. Buat endpoint backend penjelas token `GET /api/v1/posts/upload-signature` (Cloudinary signed upload params).
+  2. Biarkan aplikasi mobile mengunggah file gambar secara langsung dari perangkat client ke Cloudinary CDN.
+
+---
+
+### 8. 🔄 Socket.IO Redis Adapter for Horizontal Scaling
+- **Kategori**: Realtime & Clustering
+- **Deskripsi Masalah**:
+  Dalam mode PM2 Cluster atau multi-container Docker, koneksi WebSocket Socket.IO tidak saling terhubung antar worker process.
+- **Saran Solusi**:
+  1. Integrasikan `@socket.io/redis-adapter` berbasis Redis Pub/Sub untuk menyinkronkan event realtime ke seluruh instance server.
+
+---
+
+### 9. 🧪 Automated Load & Stress Testing (k6)
+- **Kategori**: Quality Assurance & Performance Tuning
+- **Deskripsi Masalah**:
+  Perlu pengujian kapasitas beban server (*stress testing*) sebelum perilisan resmi untuk mengetahui batas *throughput* (RPS) backend.
+- **Saran Solusi**:
+  1. Buat skrip pengujian beban k6 (`load_test.js`) di repository `be-muslim-app`.
+  2. Simulasikan skenario 500 - 5.000 Virtual Users (VU) bersamaan untuk endpoint auth, feed, dan jadwal sholat.
+
