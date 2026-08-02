@@ -5,6 +5,7 @@ export interface User {
   password_hash?: string;
   avatar_url?: string;
   is_verified?: boolean;
+  fcm_token?: string;
   created_at: Date;
 }
 
@@ -114,4 +115,21 @@ export interface PrayerTimesData {
       designation: { expanded: string };
     };
   };
+}
+
+export type NotificationType = 'LIKE_POST' | 'COMMENT_POST' | 'REPLY_COMMENT' | 'FOLLOW_USER' | 'ADZAN_REMINDER' | 'SYSTEM';
+
+export interface Notification {
+  id: string;
+  recipient_id: string;
+  actor_id?: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  entity_type?: 'POST' | 'COMMENT' | 'USER' | 'PRAYER';
+  entity_id?: string;
+  is_read: boolean;
+  created_at: Date;
+  actor_name?: string;
+  actor_avatar?: string;
 }

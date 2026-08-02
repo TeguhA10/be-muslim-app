@@ -9,6 +9,7 @@
     "start": "node dist/server.js",
     "db:setup": "ts-node src/db/create_database.ts",
     "migration:up": "ts-node src/db/migrate.ts",
+    "broadcast": "ts-node src/scripts/broadcast.ts",
     "lint": "eslint src/**/*.ts"
   },
   "keywords": [
@@ -40,6 +41,7 @@
     "pg": "^8.13.1",
     "redis": "^4.7.0",
     "sharp": "^0.35.3",
+    "socket.io": "^4.8.3",
     "winston": "^3.17.0",
     "zod": "^3.24.1"
   },

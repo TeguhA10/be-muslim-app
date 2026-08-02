@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service';
 import { CloudinaryService } from '../services/cloudinary.service';
+import { NotificationModel } from '../models/notification.model';
 import { sendSuccess, sendError } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
@@ -99,6 +100,10 @@ export class AuthController {
     try {
       const authHeader = req.headers['authorization'] || null;
       const userId = req.user?.id || '';
+
+      if (userId) {
+        await NotificationModel.clearPushToken(userId);
+      }
 
       const result = await AuthService.logout(authHeader, userId);
       sendSuccess(res, 'Berhasil logout', result);

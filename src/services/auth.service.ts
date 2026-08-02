@@ -4,6 +4,7 @@ import { pool } from '../config/database';
 import { ENV } from '../config/env';
 import { User } from '../models';
 import { EmailService } from './email.service';
+import { NotificationService } from './notification.service';
 
 function generate6DigitOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -538,6 +539,23 @@ export class AuthService {
         [followerId, targetUserId]
       );
       isFollowing = true;
+
+      // Trigger notification asynchronously
+      (async () => {
+        try {
+          const followerRes = await pool.query('SELECT name FROM users WHERE id = $1', [followerId]);
+          const followerName = followerRes.rows[0]?.name || 'Seseorang';
+          await NotificationService.notifyUser({
+            recipientId: targetUserId,
+            actorId: followerId,
+            type: 'FOLLOW_USER',
+            title: 'Mulai Mengikuti Anda',
+            body: `${followerName} sekarang mulai mengikuti Anda.`,
+            entityType: 'USER',
+            entityId: followerId,
+          });
+        } catch (err) {}
+      })();
     }
 
     const followersCountRes = await pool.query(

@@ -1,5 +1,6 @@
 import { pool } from '../config/database';
 import { Post, PostComment } from '../models';
+import { NotificationService } from './notification.service';
 
 export class PostService {
   static async createPost(
@@ -216,6 +217,30 @@ export class PostService {
       return { liked: false };
     } else {
       await pool.query('INSERT INTO post_likes (post_id, user_id) VALUES ($1, $2)', [postId, userId]);
+
+      // Trigger notification asynchronously
+      (async () => {
+        try {
+          const postRes = await pool.query('SELECT user_id, content FROM posts WHERE id = $1', [postId]);
+          const userRes = await pool.query('SELECT name FROM users WHERE id = $1', [userId]);
+          const post = postRes.rows[0];
+          const liker = userRes.rows[0];
+          if (post && post.user_id !== userId) {
+            const actorName = liker?.name || 'Seseorang';
+            const postSnippet = post.content ? `"${post.content.substring(0, 40)}..."` : 'postingan Anda';
+            await NotificationService.notifyUser({
+              recipientId: post.user_id,
+              actorId: userId,
+              type: 'LIKE_POST',
+              title: 'Menyukai Postingan Anda',
+              body: `${actorName} menyukai ${postSnippet}`,
+              entityType: 'POST',
+              entityId: postId,
+            });
+          }
+        } catch (err) {}
+      })();
+
       return { liked: true };
     }
   }
@@ -321,7 +346,54 @@ export class PostService {
       [postId, userId, content, parentId || null]
     );
 
-    return res.rows[0];
+    const newComment = res.rows[0];
+
+    // Trigger notification asynchronously
+    (async () => {
+      try {
+        const userRes = await pool.query('SELECT name FROM users WHERE id = $1', [userId]);
+        const commenterName = userRes.rows[0]?.name || 'Seseorang';
+        const commentSnippet = content.length > 40 ? `"${content.substring(0, 40)}..."` : `"${content}"`;
+
+        if (parentId) {
+          const parentRes = await pool.query('SELECT user_id FROM post_comments WHERE id = $1', [parentId]);
+          const parentComment = parentRes.rows[0];
+          if (parentComment && parentComment.user_id !== userId) {
+            await NotificationService.notifyUser({
+              recipientId: parentComment.user_id,
+              actorId: userId,
+              type: 'REPLY_COMMENT',
+              title: 'Membalas Komentar Anda',
+              body: `${commenterName} membalas komentar Anda: ${commentSnippet}`,
+              entityType: 'POST',
+              entityId: postId,
+            });
+          }
+        }
+
+        const postRes = await pool.query('SELECT user_id, content FROM posts WHERE id = $1', [postId]);
+        const post = postRes.rows[0];
+        if (post && post.user_id !== userId) {
+          // If already notified parent comment author and post author is the same person, skip duplicate
+          const parentRes = parentId ? await pool.query('SELECT user_id FROM post_comments WHERE id = $1', [parentId]) : null;
+          const parentOwnerId = parentRes?.rows[0]?.user_id;
+
+          if (!parentOwnerId || parentOwnerId !== post.user_id) {
+            await NotificationService.notifyUser({
+              recipientId: post.user_id,
+              actorId: userId,
+              type: 'COMMENT_POST',
+              title: 'Mengomentari Postingan Anda',
+              body: `${commenterName} mengomentari postingan Anda: ${commentSnippet}`,
+              entityType: 'POST',
+              entityId: postId,
+            });
+          }
+        }
+      } catch (err) {}
+    })();
+
+    return newComment;
   }
 
   static async getComments(postId: string) {
