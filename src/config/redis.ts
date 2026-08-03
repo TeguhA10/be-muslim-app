@@ -1,10 +1,16 @@
 import { createClient } from 'redis';
 import { ENV } from './env';
 
+// Strip protocol prefix (https://, http://, rediss://, redis://) and trailing slashes
+const rawHost = ENV.REDIS.HOST || 'localhost';
+const cleanHost = rawHost.replace(/^(https?:\/\/|rediss?:\/\/)/i, '').replace(/\/.*$/, '').trim();
+const isCloudRedis = cleanHost !== 'localhost' && cleanHost !== '127.0.0.1';
+
 export const redisClient = createClient({
   socket: {
-    host: ENV.REDIS.HOST,
-    port: ENV.REDIS.PORT,
+    host: cleanHost,
+    port: ENV.REDIS.PORT || 6379,
+    tls: isCloudRedis ? true : undefined,
   },
   password: ENV.REDIS.PASSWORD || undefined,
 });

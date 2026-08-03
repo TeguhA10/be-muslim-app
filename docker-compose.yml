@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:15-alpine
-    container_name: muslim_postgres
+    image: postgis/postgis:15-3.3-alpine
+    container_name: muslim_postgres_local
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -13,34 +13,41 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d muslim_database_app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: muslim_redis
+    container_name: muslim_redis_local
     restart: always
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
-    build: .
-    container_name: muslim_backend_api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: muslim_backend_api_dev
     restart: always
     ports:
       - "5000:5000"
-    environment:
-      - PORT=5000
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=password123!
-      - DB_NAME=muslim_database_app
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+    env_file:
+      - .env.development
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   postgres_data:

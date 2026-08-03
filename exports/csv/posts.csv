@@ -1,0 +1,8 @@
+"id","user_id","content","image_url","created_at","category","deleted_at","is_purged","purged_at","like_count","comment_count"
+"372806b2-60f3-4b56-94e1-2440c0a8cb4a","91f7318a-67f5-446e-9fa8-a37e693bfcc4","Test image","https://images6.alphacoders.com/350/thumb-350-350482.webp","2026-08-01T09:26:22.632Z","Hikmah","","false","","0","0"
+"2b526cfe-fcff-4147-b7c6-f87513bfac6c","646c0ef5-8f19-40e0-bf52-883d6581c517","Jadwal Kajian Kitab Riyadush Shalihin Ba'da Maghrib di Masjid Al-Ikhlas","","2026-08-01T11:33:27.808Z","Kajian","","false","","0","0"
+"b0e6daf7-0558-4388-850b-6af083f66f51","646c0ef5-8f19-40e0-bf52-883d6581c517","LAA ILAHA ILLALLAH WAHDAHU LA SYARIKA LAH","","2026-08-01T11:33:27.814Z","Doa & Zikir","","false","","0","0"
+"6e0809f6-65ff-4408-b639-b4dd80e84782","91f7318a-67f5-446e-9fa8-a37e693bfcc4","Test","","2026-08-02T00:21:48.381Z","Hikmah","","false","","0","0"
+"94f0980f-6669-425d-b5ed-c461d844113e","91f7318a-67f5-446e-9fa8-a37e693bfcc4","Test 5","","2026-08-02T00:27:23.388Z","Hikmah","","false","","1","0"
+"68d7971d-b4d4-414e-ace6-c991f9736845","91f7318a-67f5-446e-9fa8-a37e693bfcc4","Test 6test","","2026-08-02T00:36:11.696Z","Hikmah","","false","","1","5"
+"13ee821d-cdc7-43cc-afeb-ce4b80391c46","146af666-4ae8-4546-afac-e36f12dffabe","Test","","2026-08-01T08:58:06.956Z","Hikmah","2026-08-02T15:15:24.202Z","true","2026-08-02T15:21:34.574Z","2","10"

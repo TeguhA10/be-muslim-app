@@ -1,0 +1,8 @@
+"id","user_id","calculation_method","reminder_offset_minutes","notif_adzan_enabled","language","sticky_notif_enabled"
+"6539daa8-7e00-402e-8cd9-9a2bf7f31540","146af666-4ae8-4546-afac-e36f12dffabe","KEMENAG","10","true","id","false"
+"52e086f2-eb82-41ce-bc3d-e4f603a33980","0fce6dcf-dd06-43da-9248-152e5ff5e1ba","KEMENAG","10","true","id","false"
+"b3ff709b-1f62-43e6-b1c9-4b8ba5bb68a4","4fb826a3-1675-4a72-ac14-dfc7d85fd31b","KEMENAG","10","true","id","false"
+"fcc1ef6d-bc51-4461-9cd3-09473efddb9c","646c0ef5-8f19-40e0-bf52-883d6581c517","KEMENAG","10","true","id","false"
+"cb25b2d2-3f54-4d58-8b96-161a3d4f369f","7eb4b139-6508-454a-b77f-25f3744c2ec0","KEMENAG","10","true","id","false"
+"419dfe0d-a996-4a4f-969e-913c90730b21","91f7318a-67f5-446e-9fa8-a37e693bfcc4","KEMENAG","15","true","en","true"
+"9f4b666d-ce73-4171-86ee-4beffbaa70f8","11111111-1111-1111-1111-111111111111","KEMENAG","10","true","id","false"

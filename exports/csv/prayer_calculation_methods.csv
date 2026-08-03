@@ -1,0 +1,7 @@
+"id","name","description","fajr_angle","isha_angle","is_active","sort_order"
+"KEMENAG","Kementerian Agama RI (KEMENAG)","Standar resmi Kementerian Agama Republik Indonesia (Fajr 20°, Isha 18°)","20.00","18.00","true","1"
+"MWL","Muslim World League (MWL)","Liga Dunia Islam / Europe & Far East (Fajr 18°, Isha 17°)","18.00","17.00","true","2"
+"ISNA","Islamic Society of North America (ISNA)","Standar Amerika Utara & Kanada (Fajr 15°, Isha 15°)","15.00","15.00","true","3"
+"EGYPT","Egyptian General Authority of Survey","Standar Mesir & Afrika Utara (Fajr 19.5°, Isha 17.5°)","19.50","17.50","true","4"
+"MAKKAH","Umm al-Qura University, Makkah","Standar Arab Saudi & Jazirah Arab (Fajr 18.5°, Isha 90m)","18.50","18.00","true","5"
+"KARACHI","University of Islamic Sciences, Karachi","Standar Pakistan, India, Bangladesh (Fajr 18°, Isha 18°)","18.00","18.00","true","6"
