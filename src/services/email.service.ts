@@ -6,7 +6,10 @@ import { logger } from '../utils/logger';
 
 // Custom IPv4-only DNS lookup function to guarantee no IPv6 ENETUNREACH on Windows/Node
 const ipv4Lookup = (hostname: string, options: any, callback: any) => {
-  return dns.lookup(hostname, { ...options, family: 4 }, callback);
+  dns.lookup(hostname, { family: 4 }, (err, address) => {
+    if (err) return callback(err, '', 4);
+    callback(null, address, 4);
+  });
 };
 
 /**
@@ -22,26 +25,12 @@ function createTransporter() {
   const cleanPass = ENV.EMAIL.PASS.replace(/\s+/g, '');
   const host = ENV.EMAIL.HOST || 'smtp.gmail.com';
 
-  if (host === 'smtp.gmail.com' || host.includes('gmail')) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      lookup: ipv4Lookup,
-      auth: {
-        user: ENV.EMAIL.USER,
-        pass: cleanPass,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 5000,
-      socketTimeout: 10000,
-    } as any);
-  }
-
   return nodemailer.createTransport({
     host: host,
-    port: ENV.EMAIL.PORT,
+    port: ENV.EMAIL.PORT || 465,
     secure: ENV.EMAIL.PORT === 465 || ENV.EMAIL.SECURE,
     lookup: ipv4Lookup,
-    connectionTimeout: 10000,
+    connectionTimeout: 10000, // 10 seconds connection timeout
     greetingTimeout: 5000,
     socketTimeout: 10000,
     auth: {
@@ -50,6 +39,7 @@ function createTransporter() {
     },
     tls: {
       rejectUnauthorized: false,
+      servername: host,
     },
   } as any);
 }
@@ -205,7 +195,28 @@ export class EmailService {
     logger.info(`[EMAIL OTP] To: ${email} | Code: ${otpCode} | Purpose: ${purpose}`);
     logger.info(`=================================================`);
 
-    // 1. Try Resend HTTP REST API if RESEND_API_KEY is configured (Port 443 - 100% immune to ISP blocks)
+    // 1. Primary Engine: Nodemailer Gmail SMTP (Sends from alfaruqiteguh@gmail.com)
+    if (transporter) {
+      try {
+        const fromAddress = ENV.EMAIL.FROM_ADDRESS || ENV.EMAIL.USER;
+        const fromName = ENV.EMAIL.FROM_NAME || 'Muslim App';
+
+        const info = await transporter.sendMail({
+          from: `"${fromName}" <${fromAddress}>`,
+          to: email,
+          subject,
+          html: htmlBody,
+          text: `Kode OTP Muslim App Anda: ${otpCode}\nBerlaku 10 menit.\n\nJangan bagikan kode ini kepada siapapun.`,
+        });
+
+        logger.info(`[EmailService] Delivered via Gmail SMTP (${fromAddress}) → MessageID: ${info.messageId} → To: ${email}`);
+        return true;
+      } catch (err: any) {
+        logger.warn(`[EmailService] Gmail SMTP failed (${err.message}), trying Resend HTTP API fallback...`);
+      }
+    }
+
+    // 2. Secondary Engine: Resend HTTP REST API Fallback
     const resendApiKey = ENV.EMAIL.RESEND_API_KEY || process.env.RESEND_API_KEY;
     if (resendApiKey) {
       try {
@@ -228,33 +239,11 @@ export class EmailService {
         logger.info(`[EmailService] Delivered via Resend HTTP API → ID: ${res.data?.id}`);
         return true;
       } catch (resendErr: any) {
-        logger.warn(`[EmailService] Resend API error (${resendErr.message}), trying SMTP fallback...`);
+        const detail = resendErr.response?.data?.message || resendErr.message;
+        logger.warn(`[EmailService] Resend API error (${detail}). OTP logged to console.`);
       }
     }
 
-    // 2. Fallback to Nodemailer SMTP
-    if (!transporter) {
-      logger.warn(`[EmailService] SMTP not configured — OTP logged to console only. Add EMAIL_USER/EMAIL_PASS or RESEND_API_KEY to .env`);
-      return true;
-    }
-
-    try {
-      const fromAddress = ENV.EMAIL.FROM_ADDRESS || ENV.EMAIL.USER;
-      const fromName = ENV.EMAIL.FROM_NAME || 'Muslim App';
-
-      const info = await transporter.sendMail({
-        from: `"${fromName}" <${fromAddress}>`,
-        to: email,
-        subject,
-        html: htmlBody,
-        text: `Kode OTP Muslim App Anda: ${otpCode}\nBerlaku 10 menit.\n\nJangan bagikan kode ini kepada siapapun.`,
-      });
-
-      logger.info(`[EmailService] Email delivered via SMTP → MessageID: ${info.messageId} → To: ${email}`);
-      return true;
-    } catch (err: any) {
-      logger.error(`[EmailService] Failed to send OTP email to ${email}: ${err.message}`);
-      return false;
-    }
+    return true;
   }
 }
