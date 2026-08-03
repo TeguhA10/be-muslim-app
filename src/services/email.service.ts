@@ -199,20 +199,29 @@ export class EmailService {
     const brevoApiKey = ENV.EMAIL.BREVO_API_KEY || process.env.BREVO_API_KEY;
     if (brevoApiKey) {
       try {
-        const fromAddress = ENV.EMAIL.FROM_ADDRESS || ENV.EMAIL.USER || 'alfaruqiteguh@gmail.com';
         const fromName = ENV.EMAIL.FROM_NAME || 'Muslim App';
+        const fromAddress = ENV.EMAIL.FROM_ADDRESS;
+
+        const brevoPayload: any = {
+          to: [{ email: email }],
+          subject: subject,
+          htmlContent: htmlBody,
+        };
+
+        if (fromAddress) {
+          brevoPayload.sender = {
+            name: fromName,
+            email: fromAddress,
+          };
+        } else {
+          brevoPayload.sender = {
+            name: fromName,
+          };
+        }
 
         const res = await axios.post(
           'https://api.brevo.com/v3/smtp/email',
-          {
-            sender: {
-              name: fromName,
-              email: fromAddress,
-            },
-            to: [{ email: email }],
-            subject: subject,
-            htmlContent: htmlBody,
-          },
+          brevoPayload,
           {
             headers: {
               'api-key': brevoApiKey,
