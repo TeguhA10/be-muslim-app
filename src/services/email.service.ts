@@ -195,10 +195,45 @@ export class EmailService {
     logger.info(`[EMAIL OTP] To: ${email} | Code: ${otpCode} | Purpose: ${purpose}`);
     logger.info(`=================================================`);
 
-    // 1. Primary Engine: Nodemailer Gmail SMTP (Sends from alfaruqiteguh@gmail.com)
+    // 1. Primary Engine: Brevo HTTP REST API (Port 443 HTTPS - Free 300 emails/day to ANY recipient, no domain lock!)
+    const brevoApiKey = ENV.EMAIL.BREVO_API_KEY || process.env.BREVO_API_KEY;
+    if (brevoApiKey) {
+      try {
+        const fromAddress = ENV.EMAIL.FROM_ADDRESS || ENV.EMAIL.USER || 'alfaruqiteguh@gmail.com';
+        const fromName = ENV.EMAIL.FROM_NAME || 'Muslim App';
+
+        const res = await axios.post(
+          'https://api.brevo.com/v3/smtp/email',
+          {
+            sender: {
+              name: fromName,
+              email: fromAddress,
+            },
+            to: [{ email: email }],
+            subject: subject,
+            htmlContent: htmlBody,
+          },
+          {
+            headers: {
+              'api-key': brevoApiKey,
+              'accept': 'application/json',
+              'content-type': 'application/json',
+            },
+            timeout: 8000,
+          }
+        );
+        logger.info(`[EmailService] Delivered via Brevo HTTP API → ID: ${res.data?.messageId || res.data?.messageIds?.[0] || 'success'} → To: ${email}`);
+        return true;
+      } catch (brevoErr: any) {
+        const detail = brevoErr.response?.data?.message || brevoErr.message;
+        logger.warn(`[EmailService] Brevo API error (${detail}), trying SMTP fallback...`);
+      }
+    }
+
+    // 2. Secondary Engine: Nodemailer SMTP
     if (transporter) {
       try {
-        const fromAddress = ENV.EMAIL.FROM_ADDRESS || ENV.EMAIL.USER;
+        const fromAddress = ENV.EMAIL.FROM_ADDRESS || ENV.EMAIL.USER || 'alfaruqiteguh@gmail.com';
         const fromName = ENV.EMAIL.FROM_NAME || 'Muslim App';
 
         const info = await transporter.sendMail({
@@ -209,14 +244,14 @@ export class EmailService {
           text: `Kode OTP Muslim App Anda: ${otpCode}\nBerlaku 10 menit.\n\nJangan bagikan kode ini kepada siapapun.`,
         });
 
-        logger.info(`[EmailService] Delivered via Gmail SMTP (${fromAddress}) → MessageID: ${info.messageId} → To: ${email}`);
+        logger.info(`[EmailService] Delivered via SMTP (${fromAddress}) → MessageID: ${info.messageId} → To: ${email}`);
         return true;
       } catch (err: any) {
-        logger.warn(`[EmailService] Gmail SMTP failed (${err.message}), trying Resend HTTP API fallback...`);
+        logger.warn(`[EmailService] SMTP failed (${err.message}), trying Resend HTTP API fallback...`);
       }
     }
 
-    // 2. Secondary Engine: Resend HTTP REST API Fallback
+    // 3. Tertiary Engine: Resend HTTP REST API Fallback
     const resendApiKey = ENV.EMAIL.RESEND_API_KEY || process.env.RESEND_API_KEY;
     if (resendApiKey) {
       try {

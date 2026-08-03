@@ -30,14 +30,15 @@ export const ENV = {
     OVERPASS: process.env.OVERPASS_API_BASE_URL || 'https://overpass-api.de/api/interpreter',
   },
   EMAIL: {
+    BREVO_API_KEY: process.env.BREVO_API_KEY || '',
     RESEND_API_KEY: process.env.RESEND_API_KEY || '',
-    HOST: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    HOST: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
     PORT: parseInt(process.env.EMAIL_PORT || '587', 10),
     SECURE: process.env.EMAIL_SECURE === 'true',
     USER: process.env.EMAIL_USER || '',
     PASS: process.env.EMAIL_PASS || '',
     FROM_NAME: process.env.EMAIL_FROM_NAME || 'Muslim App',
-    FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || '',
+    FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'alfaruqiteguh@gmail.com',
   },
   CLOUDINARY: {
     CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || 'duzkwgevq',
