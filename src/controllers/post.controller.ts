@@ -42,10 +42,13 @@ export class PostController {
         }
       }
 
-      // Handle file uploads
-      if (req.files && Array.isArray(req.files)) {
-        for (const file of req.files) {
-          const uploadedUrl = await CloudinaryService.uploadImage(file.buffer);
+      // Handle file uploads in parallel (significantly speeds up response time)
+      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+        const uploadPromises = (req.files as Express.Multer.File[]).map((file) =>
+          CloudinaryService.uploadImage(file.buffer)
+        );
+        const uploadedUrls = await Promise.all(uploadPromises);
+        for (const uploadedUrl of uploadedUrls) {
           mediaList.push({ type: 'IMAGE', url: uploadedUrl });
         }
       }
