@@ -206,7 +206,8 @@ export class EmailService {
     logger.info(`=================================================`);
 
     // 1. Try Resend HTTP REST API if RESEND_API_KEY is configured (Port 443 - 100% immune to ISP blocks)
-    if (process.env.RESEND_API_KEY) {
+    const resendApiKey = ENV.EMAIL.RESEND_API_KEY || process.env.RESEND_API_KEY;
+    if (resendApiKey) {
       try {
         const res = await axios.post(
           'https://api.resend.com/emails',
@@ -218,7 +219,7 @@ export class EmailService {
           },
           {
             headers: {
-              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+              Authorization: `Bearer ${resendApiKey}`,
               'Content-Type': 'application/json',
             },
             timeout: 8000,

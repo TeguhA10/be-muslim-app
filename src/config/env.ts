@@ -30,6 +30,7 @@ export const ENV = {
     OVERPASS: process.env.OVERPASS_API_BASE_URL || 'https://overpass-api.de/api/interpreter',
   },
   EMAIL: {
+    RESEND_API_KEY: process.env.RESEND_API_KEY || '',
     HOST: process.env.EMAIL_HOST || 'smtp.gmail.com',
     PORT: parseInt(process.env.EMAIL_PORT || '587', 10),
     SECURE: process.env.EMAIL_SECURE === 'true',
