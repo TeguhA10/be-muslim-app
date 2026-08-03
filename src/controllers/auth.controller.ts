@@ -4,6 +4,7 @@ import { CloudinaryService } from '../services/cloudinary.service';
 import { NotificationModel } from '../models/notification.model';
 import { sendSuccess, sendError } from '../utils/response';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { validatePasswordComplexity } from '../utils/password';
 
 export class AuthController {
   static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -11,6 +12,12 @@ export class AuthController {
       const { name, email, password } = req.body;
       if (!name || !email || !password) {
         sendError(res, 'Nama, email, dan kata sandi wajib diisi', null, 400);
+        return;
+      }
+
+      const passCheck = validatePasswordComplexity(password);
+      if (!passCheck.valid) {
+        sendError(res, passCheck.message!, null, 400);
         return;
       }
 
@@ -71,6 +78,12 @@ export class AuthController {
       const { email, code, new_password } = req.body;
       if (!email || !code || !new_password) {
         sendError(res, 'Email, kode OTP, dan kata sandi baru wajib diisi', null, 400);
+        return;
+      }
+
+      const passCheck = validatePasswordComplexity(new_password);
+      if (!passCheck.valid) {
+        sendError(res, passCheck.message!, null, 400);
         return;
       }
 
@@ -154,6 +167,17 @@ export class AuthController {
         return;
       }
       const { old_password, otp_code, new_password } = req.body;
+      if (!new_password) {
+        sendError(res, 'Kata sandi baru wajib diisi', null, 400);
+        return;
+      }
+
+      const passCheck = validatePasswordComplexity(new_password);
+      if (!passCheck.valid) {
+        sendError(res, passCheck.message!, null, 400);
+        return;
+      }
+
       const result = await AuthService.changePassword(userId, { old_password, otp_code, new_password });
       sendSuccess(res, result.message, result);
     } catch (error: any) {
