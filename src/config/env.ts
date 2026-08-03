@@ -47,9 +47,9 @@ export const ENV = {
     CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
     RATE_LIMIT: {
       GLOBAL_WINDOW_MS: parseInt(process.env.RATE_LIMIT_GLOBAL_WINDOW_MS || '900000', 10), // 15 mins default
-      GLOBAL_MAX: parseInt(process.env.RATE_LIMIT_GLOBAL_MAX || '300', 10),
+      GLOBAL_MAX: parseInt(process.env.RATE_LIMIT_GLOBAL_MAX || '1000', 10), // 1,000 requests per 15 mins
       AUTH_WINDOW_MS: parseInt(process.env.RATE_LIMIT_AUTH_WINDOW_MS || '900000', 10), // 15 mins default
-      AUTH_MAX: parseInt(process.env.RATE_LIMIT_AUTH_MAX || '15', 10),
+      AUTH_MAX: parseInt(process.env.RATE_LIMIT_AUTH_MAX || '30', 10), // 30 auth attempts per 15 mins
     },
   },
 };
