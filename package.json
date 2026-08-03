@@ -5,8 +5,10 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev:staging": "NODE_ENV=staging ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:prod": "NODE_ENV=production node dist/server.js",
     "db:setup": "ts-node src/db/create_database.ts",
     "migration:up": "ts-node src/db/migrate.ts",
     "broadcast": "ts-node src/scripts/broadcast.ts",

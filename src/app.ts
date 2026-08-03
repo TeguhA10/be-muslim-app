@@ -6,6 +6,8 @@ import routes from './routes';
 import { errorHandler } from './middlewares/error.middleware';
 import { sanitizeInputs } from './middlewares/sanitizer.middleware';
 
+import { ENV } from './config/env';
+
 const app: Express = express();
 
 // 1. Hardened Security Headers (OWASP Security Standards)
@@ -22,7 +24,7 @@ app.use(
 );
 
 // 2. Strict CORS Configuration
-const allowedOrigins = (process.env.CORS_ORIGIN || '*').split(',');
+const allowedOrigins = (ENV.SECURITY.CORS_ORIGIN || '*').split(',');
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -40,19 +42,19 @@ app.use(
 
 // 3. Tiered Rate Limiters (OWASP API4:2023 Unrestricted Resource Consumption Protection)
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // 300 requests per IP per window
+  windowMs: ENV.SECURITY.RATE_LIMIT.GLOBAL_WINDOW_MS,
+  max: ENV.SECURITY.RATE_LIMIT.GLOBAL_MAX,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Terlalu banyak permintaan dari IP ini, silakan coba beberapa saat lagi.' },
 });
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 15, // Max 15 attempts for sensitive auth endpoints (Login/Register/OTP)
+  windowMs: ENV.SECURITY.RATE_LIMIT.AUTH_WINDOW_MS,
+  max: ENV.SECURITY.RATE_LIMIT.AUTH_MAX,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: 'Batas percobaan login/OTP terlampaui. Silakan coba lagi dalam 15 menit.' },
+  message: { success: false, message: 'Batas percobaan login/OTP terlampaui. Silakan coba lagi dalam beberapa saat.' },
 });
 
 app.use(globalLimiter);

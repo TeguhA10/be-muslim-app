@@ -1,5 +1,9 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+
+const envMode = process.env.NODE_ENV || 'development';
+dotenv.config({ path: path.resolve(process.cwd(), `.env.${envMode}`) });
+dotenv.config(); // fallback to default .env
 
 export const ENV = {
   PORT: process.env.PORT || '5000',
@@ -38,5 +42,14 @@ export const ENV = {
     CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || 'duzkwgevq',
     API_KEY: process.env.CLOUDINARY_API_KEY || '395813582699366',
     API_SECRET: process.env.CLOUDINARY_API_SECRET || '7s8OZTPIrfzMeMRe4mPQfEyuFjA',
+  },
+  SECURITY: {
+    CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
+    RATE_LIMIT: {
+      GLOBAL_WINDOW_MS: parseInt(process.env.RATE_LIMIT_GLOBAL_WINDOW_MS || '900000', 10), // 15 mins default
+      GLOBAL_MAX: parseInt(process.env.RATE_LIMIT_GLOBAL_MAX || '300', 10),
+      AUTH_WINDOW_MS: parseInt(process.env.RATE_LIMIT_AUTH_WINDOW_MS || '900000', 10), // 15 mins default
+      AUTH_MAX: parseInt(process.env.RATE_LIMIT_AUTH_MAX || '15', 10),
+    },
   },
 };
