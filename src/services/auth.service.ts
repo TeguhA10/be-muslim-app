@@ -6,6 +6,7 @@ import { User } from '../models';
 import { EmailService } from './email.service';
 import { NotificationService } from './notification.service';
 import { getLocalDateStr } from '../utils/date';
+import { logger } from '../utils/logger';
 
 function generate6DigitOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -37,7 +38,11 @@ export class AuthService {
           `INSERT INTO otp_codes (email, code, purpose, expires_at) VALUES ($1, $2, 'VERIFY_EMAIL', $3)`,
           [email, otpCode, expiresAt]
         );
-        await EmailService.sendOtpEmail(email, otpCode, 'VERIFY_EMAIL');
+
+        // Dispatch email asynchronously in background so HTTP response is instant & non-blocking
+        EmailService.sendOtpEmail(email, otpCode, 'VERIFY_EMAIL').catch((err) => {
+          logger.error(`[Background Email] Failed to send OTP: ${err.message}`);
+        });
 
         return {
           requires_otp: true,
@@ -81,7 +86,10 @@ export class AuthService {
 
       await client.query('COMMIT');
 
-      await EmailService.sendOtpEmail(email, otpCode, 'VERIFY_EMAIL');
+      // Dispatch email asynchronously in background so HTTP response is instant & non-blocking
+      EmailService.sendOtpEmail(email, otpCode, 'VERIFY_EMAIL').catch((err) => {
+        logger.error(`[Background Email] Failed to send OTP: ${err.message}`);
+      });
 
       return {
         requires_otp: true,
@@ -196,7 +204,10 @@ export class AuthService {
       [email, otpCode, expiresAt]
     );
 
-    await EmailService.sendOtpEmail(email, otpCode, 'FORGOT_PASSWORD');
+    // Dispatch email asynchronously in background so HTTP response is instant & non-blocking
+    EmailService.sendOtpEmail(email, otpCode, 'FORGOT_PASSWORD').catch((err) => {
+      logger.error(`[Background Email] Failed to send OTP: ${err.message}`);
+    });
 
     return {
       email,
