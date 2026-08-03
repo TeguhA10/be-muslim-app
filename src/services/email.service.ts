@@ -15,6 +15,7 @@ function createTransporter() {
     host: ENV.EMAIL.HOST,
     port: ENV.EMAIL.PORT,
     secure: ENV.EMAIL.SECURE, // true for port 465, false for 587
+    family: 4, // Force IPv4 connection to prevent ENETUNREACH on IPv6 unroutable networks
     auth: {
       user: ENV.EMAIL.USER,
       pass: ENV.EMAIL.PASS,
@@ -22,7 +23,7 @@ function createTransporter() {
     tls: {
       rejectUnauthorized: false,
     },
-  });
+  } as any);
 }
 
 const transporter = createTransporter();
