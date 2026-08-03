@@ -10,6 +10,9 @@ import { ENV } from './config/env';
 
 const app: Express = express();
 
+// 0. Enable Trust Proxy for Reverse Proxies / Load Balancers (Render, Cloudflare, Nginx)
+app.set('trust proxy', 1);
+
 // 1. Hardened Security Headers (OWASP Security Standards)
 app.use(
   helmet({

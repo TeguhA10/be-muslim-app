@@ -17,13 +17,26 @@ function createTransporter() {
 
   // Clean App Password by stripping any whitespace
   const cleanPass = ENV.EMAIL.PASS.replace(/\s+/g, '');
+  const host = ENV.EMAIL.HOST || 'smtp.gmail.com';
+
+  if (host === 'smtp.gmail.com' || host.includes('gmail')) {
+    return nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: ENV.EMAIL.USER,
+        pass: cleanPass,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
+    } as any);
+  }
 
   return nodemailer.createTransport({
-    host: ENV.EMAIL.HOST,
+    host: host,
     port: ENV.EMAIL.PORT,
     secure: ENV.EMAIL.PORT === 465 || ENV.EMAIL.SECURE,
-    family: 4, // Force IPv4 connection to prevent ENETUNREACH on IPv6 unroutable networks
-    connectionTimeout: 10000, // 10 seconds connection timeout
+    connectionTimeout: 10000,
     greetingTimeout: 5000,
     socketTimeout: 10000,
     auth: {
