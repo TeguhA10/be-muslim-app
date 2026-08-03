@@ -20,9 +20,15 @@ export class AuthService {
     const existing = await pool.query('SELECT id, is_verified FROM users WHERE email = $1', [email]);
     if (existing.rows.length > 0) {
       if (existing.rows[0].is_verified) {
-        throw new Error('Email sudah terdaftar. Silakan masuk (login).');
+        throw new Error('Email ini sudah terdaftar dan terverifikasi. Silakan langsung masuk (login).');
       } else {
-        // Resend OTP for existing unverified user
+        // Resend OTP for existing unverified user & update credentials
+        const passwordHash = await bcrypt.hash(password, 10);
+        await pool.query(
+          'UPDATE users SET name = $1, password_hash = $2 WHERE email = $3 AND is_verified = false',
+          [name, passwordHash, email]
+        );
+
         const otpCode = generate6DigitOtp();
         const expiresAt = new Date(Date.now() + otpExpiresInSeconds * 1000); // 10 mins
 
@@ -38,7 +44,7 @@ export class AuthService {
           email,
           otp_expires_at: expiresAt.toISOString(),
           otp_expires_in_seconds: otpExpiresInSeconds,
-          message: 'Kode OTP verifikasi baru telah dikirim ke email Anda.',
+          message: 'Akun belum diverifikasi. Kode OTP verifikasi baru telah dikirim ke email Anda.',
         };
       }
     }
