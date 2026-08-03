@@ -42,7 +42,28 @@ export class PostController {
         }
       }
 
-      // Handle file uploads in parallel (significantly speeds up response time)
+      // Add direct pre-uploaded Cloudinary image URLs from client (presigned upload)
+      let images: string[] = [];
+      try {
+        if (req.body.images) {
+          images = typeof req.body.images === 'string' ? JSON.parse(req.body.images) : req.body.images;
+        } else if (req.body.image_urls) {
+          images = typeof req.body.image_urls === 'string' ? JSON.parse(req.body.image_urls) : req.body.image_urls;
+        }
+      } catch (e) {
+        if (Array.isArray(req.body.images)) images = req.body.images;
+        else if (typeof req.body.images === 'string') images = [req.body.images];
+      }
+
+      if (images && Array.isArray(images)) {
+        for (const imgUrl of images) {
+          if (imgUrl && typeof imgUrl === 'string' && imgUrl.trim() !== '') {
+            mediaList.push({ type: 'IMAGE', url: imgUrl.trim() });
+          }
+        }
+      }
+
+      // Handle fallback multipart file uploads in parallel
       if (req.files && Array.isArray(req.files) && req.files.length > 0) {
         const uploadPromises = (req.files as Express.Multer.File[]).map((file) =>
           CloudinaryService.uploadImage(file.buffer)
@@ -61,6 +82,7 @@ export class PostController {
   }
 
   static async getFeed(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+
     try {
       const userId = req.user?.id || (req.query.user_id as any) || '11111111-1111-1111-1111-111111111111';
       const authorId = (req.query.author_id as string) || (req.query.target_user_id as string) || undefined;
