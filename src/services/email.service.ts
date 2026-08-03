@@ -1,6 +1,10 @@
+import dns from 'dns';
 import nodemailer from 'nodemailer';
 import { ENV } from '../config/env';
 import { logger } from '../utils/logger';
+
+// Force Node.js DNS resolver to prioritize IPv4 addresses
+dns.setDefaultResultOrder('ipv4first');
 
 /**
  * Creates a Nodemailer transporter using Gmail SMTP or custom SMTP.
@@ -11,14 +15,20 @@ function createTransporter() {
     return null;
   }
 
+  // Clean App Password by stripping any whitespace
+  const cleanPass = ENV.EMAIL.PASS.replace(/\s+/g, '');
+
   return nodemailer.createTransport({
     host: ENV.EMAIL.HOST,
     port: ENV.EMAIL.PORT,
-    secure: ENV.EMAIL.SECURE, // true for port 465, false for 587
+    secure: ENV.EMAIL.PORT === 465 || ENV.EMAIL.SECURE,
     family: 4, // Force IPv4 connection to prevent ENETUNREACH on IPv6 unroutable networks
+    connectionTimeout: 10000, // 10 seconds connection timeout
+    greetingTimeout: 5000,
+    socketTimeout: 10000,
     auth: {
       user: ENV.EMAIL.USER,
-      pass: ENV.EMAIL.PASS,
+      pass: cleanPass,
     },
     tls: {
       rejectUnauthorized: false,

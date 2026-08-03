@@ -1,7 +1,11 @@
+import dns from 'dns';
 import http from 'http';
 import app from './app';
 import { ENV } from './config/env';
 import { connectRedis } from './config/redis';
+
+// Force Node.js DNS resolver to prioritize IPv4 addresses globally (fixes IPv6 ENETUNREACH on Node 18+)
+dns.setDefaultResultOrder('ipv4first');
 import { initSocket } from './config/socket';
 import { initAdzanScheduler } from './schedulers/adzan.scheduler';
 import { logger } from './utils/logger';
