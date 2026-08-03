@@ -3,8 +3,10 @@ import nodemailer from 'nodemailer';
 import { ENV } from '../config/env';
 import { logger } from '../utils/logger';
 
-// Force Node.js DNS resolver to prioritize IPv4 addresses
-dns.setDefaultResultOrder('ipv4first');
+// Custom IPv4-only DNS lookup function to guarantee no IPv6 ENETUNREACH on Windows/Node
+const ipv4Lookup = (hostname: string, options: any, callback: any) => {
+  return dns.lookup(hostname, { ...options, family: 4 }, callback);
+};
 
 /**
  * Creates a Nodemailer transporter using Gmail SMTP or custom SMTP.
@@ -22,6 +24,7 @@ function createTransporter() {
   if (host === 'smtp.gmail.com' || host.includes('gmail')) {
     return nodemailer.createTransport({
       service: 'gmail',
+      lookup: ipv4Lookup,
       auth: {
         user: ENV.EMAIL.USER,
         pass: cleanPass,
@@ -36,6 +39,7 @@ function createTransporter() {
     host: host,
     port: ENV.EMAIL.PORT,
     secure: ENV.EMAIL.PORT === 465 || ENV.EMAIL.SECURE,
+    lookup: ipv4Lookup,
     connectionTimeout: 10000,
     greetingTimeout: 5000,
     socketTimeout: 10000,
