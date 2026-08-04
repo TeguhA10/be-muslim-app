@@ -43,25 +43,10 @@ app.use(
   })
 );
 
-// 3. Tiered Rate Limiters (OWASP API4:2023 Unrestricted Resource Consumption Protection)
-const globalLimiter = rateLimit({
-  windowMs: ENV.SECURITY.RATE_LIMIT.GLOBAL_WINDOW_MS,
-  max: ENV.SECURITY.RATE_LIMIT.GLOBAL_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Terlalu banyak permintaan dari IP ini, silakan coba beberapa saat lagi.' },
-});
+import { globalLimiter } from './middlewares/rateLimiter.middleware';
 
-const authLimiter = rateLimit({
-  windowMs: ENV.SECURITY.RATE_LIMIT.AUTH_WINDOW_MS,
-  max: ENV.SECURITY.RATE_LIMIT.AUTH_MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Batas percobaan login/OTP terlampaui. Silakan coba lagi dalam beberapa saat.' },
-});
-
+// 3. Global Rate Limiter
 app.use(globalLimiter);
-app.use('/api/v1/auth', authLimiter);
 
 // 4. Body Parsers
 app.use(express.json({ limit: '10mb' }));

@@ -2,14 +2,15 @@ import { Router } from 'express';
 import { AuthController } from '../controllers/auth.controller';
 import { authenticateToken, optionalAuthenticateToken } from '../middlewares/auth.middleware';
 import { upload } from '../middlewares/upload.middleware';
+import { authLimiter } from '../middlewares/rateLimiter.middleware';
 
 const router = Router();
 
-router.post('/register', AuthController.register);
-router.post('/verify-otp', AuthController.verifyEmailOtp);
-router.post('/login', AuthController.login);
-router.post('/forgot-password', AuthController.requestForgotPassword);
-router.post('/reset-password', AuthController.resetPasswordWithOtp);
+router.post('/register', authLimiter, AuthController.register);
+router.post('/verify-otp', authLimiter, AuthController.verifyEmailOtp);
+router.post('/login', authLimiter, AuthController.login);
+router.post('/forgot-password', authLimiter, AuthController.requestForgotPassword);
+router.post('/reset-password', authLimiter, AuthController.resetPasswordWithOtp);
 router.post('/refresh-token', AuthController.refreshToken);
 router.post('/logout', authenticateToken, AuthController.logout);
 
