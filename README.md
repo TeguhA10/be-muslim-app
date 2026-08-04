@@ -42,7 +42,7 @@ Didesain untuk skala **High Concurrency (1.000+ hingga 100.000+ pengguna simulta
 
 ---
 
-## 🛠️ Tech Stack & Library
+## 🛠️ Tech Stack & Teknologi
 
 | Kategori | Teknologi / Library |
 | :--- | :--- |
@@ -54,6 +54,18 @@ Didesain untuk skala **High Concurrency (1.000+ hingga 100.000+ pengguna simulta
 | **Push Notification & Realtime** | Firebase Admin SDK (FCM), Socket.IO, `node-cron` |
 | **Load Testing Suite** | k6 Load Tester (`load_test.js`) |
 | **Validation & Security** | Zod, Helmet, bcryptjs, jsonwebtoken, express-rate-limit |
+
+---
+
+## 🌐 Integrasi API Pihak Ketiga (Third-Party APIs)
+
+| Layanan API | Endpoint / Provider | Fungsi & Penggunaan |
+| :--- | :--- | :--- |
+| **Aladhan Prayer Times API** | `https://api.aladhan.com/v1` | Kalkulasi waktu sholat 5 waktu & penanggalan Hijriah presisi berdasarkan koordinat lokasi GPS dan metode perhitungannya. |
+| **Overpass OpenStreetMap API** | `https://overpass-api.de/api/interpreter` | *Fallback geocoding* & kueri POI geospasial lokasi masjid terdekat saat data belum ada di cache. |
+| **Cloudinary Media API** | `https://api.cloudinary.com/v1_1` | Layanan CDN untuk penyimpanan gambar postingan, avatar profil, dan penanganan *Direct Presigned Upload*. |
+| **Brevo (Sendinblue) / Resend SMTP** | `smtp-relay.brevo.com` | Pengiriman email transaksi OTP verifikasi pendaftaran & reset password. |
+| **Firebase Cloud Messaging (FCM)** | Firebase Admin SDK | Pengiriman notifikasi push waktu sholat & pengumuman komunitas ke HP Android & iOS. |
 
 ---
 
