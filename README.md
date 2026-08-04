@@ -51,7 +51,7 @@ Didesain untuk skala **High Concurrency (1.000+ hingga 100.000+ pengguna simulta
 | **Database & Spatial** | PostgreSQL (v15+) + PostGIS Extension, `pg` driver |
 | **Caching Layer** | Redis (v7+), `redis` client |
 | **Media & File Storage** | Cloudinary API, Multer |
-| **Push Notification & Realtime** | Firebase Admin SDK (FCM), Socket.IO, `node-cron` |
+| **Realtime & Schedulers** | Socket.IO, `node-cron`, Nodemailer |
 | **Load Testing Suite** | k6 Load Tester (`load_test.js`) |
 | **Validation & Security** | Zod, Helmet, bcryptjs, jsonwebtoken, express-rate-limit |
 
