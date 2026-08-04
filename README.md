@@ -31,7 +31,7 @@ Didesain untuk skala **High Concurrency (1.000+ hingga 100.000+ pengguna simulta
 
 - 🔔 **Notifikasi Push Adzan & Broadcast Realtime**:
   - Scheduler otomatis terpisah untuk pengiriman notifikasi waktu sholat & pengingat sebelum adzan.
-  - Skrip broadcast massal untuk pengumuman pengguna via **Firebase Cloud Messaging (FCM)** dan **Socket.IO Realtime**.
+  - Skrip broadcast massal untuk pengumuman pengguna via **Socket.IO Realtime** dan **Email Engine (Brevo/Resend)**.
 
 - 🛡️ **Keamanan Granular Berstandar OWASP Top 10 & RFC 6585**:
   - **Decoupled Tiered Rate Limiting**: Batas request terkonfigurasi dinamis via `rateLimiter.middleware.ts`.
@@ -62,10 +62,10 @@ Didesain untuk skala **High Concurrency (1.000+ hingga 100.000+ pengguna simulta
 | Layanan API | Endpoint / Provider | Fungsi & Penggunaan |
 | :--- | :--- | :--- |
 | **Aladhan Prayer Times API** | `https://api.aladhan.com/v1` | Kalkulasi waktu sholat 5 waktu & penanggalan Hijriah presisi berdasarkan koordinat lokasi GPS dan metode perhitungannya. |
-| **Overpass OpenStreetMap API** | `https://overpass-api.de/api/interpreter` | *Fallback geocoding* & kueri POI geospasial lokasi masjid terdekat saat data belum ada di cache. |
+| **Overpass OpenStreetMap API** | `https://overpass-api.de/api/interpreter` | *Fallback geocoding* & kueri POI geospasial lokasi masjid terdekat saat data belum ada di cache PostGIS. |
 | **Cloudinary Media API** | `https://api.cloudinary.com/v1_1` | Layanan CDN untuk penyimpanan gambar postingan, avatar profil, dan penanganan *Direct Presigned Upload*. |
-| **Brevo (Sendinblue) / Resend SMTP** | `smtp-relay.brevo.com` | Pengiriman email transaksi OTP verifikasi pendaftaran & reset password. |
-| **Firebase Cloud Messaging (FCM)** | Firebase Admin SDK | Pengiriman notifikasi push waktu sholat & pengumuman komunitas ke HP Android & iOS. |
+| **Brevo (Sendinblue) API & Resend** | `https://api.brevo.com/v3/smtp/email` | Engine pengiriman email transaksi OTP verifikasi pendaftaran & reset password via REST API / SMTP. |
+| **Socket.IO Realtime API** | Engine `socket.io` | Layanan komunikasi WebSocket real-time untuk pembaruan counter notifikasi komunitas secara instant. |
 
 ---
 
