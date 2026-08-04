@@ -9,7 +9,7 @@
 
 Backend Service RESTful API komprehensif untuk **Muslim Application** yang melayani fitur Jadwal Sholat, Komunitas / Social Media Feed, Pencarian Masjid Terdekat berbasis **PostGIS**, Arah Kiblat, Kalender Hijriah, dan Notifikasi Adzan Otomatis.
 
-Didesain untuk skala **High Concurrency (1.000+ hingga 100.000+ pengguna simultan)** dengan menerapkan standar keamanan internasional **OWASP Top 10 API Security**.
+Didesain untuk skala **High Concurrency (1.000+ hingga 100.000+ pengguna simultan)** dengan menerapkan standar keamanan internasional **OWASP Top 10 API Security** & **RFC 6585**.
 
 ---
 
@@ -30,11 +30,13 @@ Didesain untuk skala **High Concurrency (1.000+ hingga 100.000+ pengguna simulta
   - Multi-tier caching: **Redis Cache -> PostGIS Local DB -> Overpass OSM Fallback**.
 
 - 🔔 **Notifikasi Push Adzan & Broadcast Realtime**:
-  - Scheduler otomatis terpisah untuk pengiriman notifikasi waktu sholat.
+  - Scheduler otomatis terpisah untuk pengiriman notifikasi waktu sholat & pengingat sebelum adzan.
   - Skrip broadcast massal untuk pengumuman pengguna via **Firebase Cloud Messaging (FCM)** dan **Socket.IO Realtime**.
 
-- 🛡️ **Keamanan Berstandar OWASP Top 10**:
-  - **Tiered Rate Limiting**: Batas request terkonfigurasi dinamis via `.env` (Global & Auth Limiter).
+- 🛡️ **Keamanan Granular Berstandar OWASP Top 10 & RFC 6585**:
+  - **Decoupled Tiered Rate Limiting**: Batas request terkonfigurasi dinamis via `rateLimiter.middleware.ts`.
+    - `globalLimiter` (1.000 req / 15 menit) melindungi seluruh endpoint API.
+    - `authLimiter` (30 req / 15 menit) dipasang **khusus pada endpoint sensitif brute-force** (`/login`, `/register`, `/verify-otp`, `/forgot-password`, `/reset-password`). Endpoint rutin seperti `/auth/me` dan `/auth/settings` bebas dari jeratan pembatas auth agar tidak memicu logout tidak disengaja.
   - **Helmet Security Headers**: HTTPS HSTS, XSS Input Sanitizer, dan CORS Origin Control.
   - **JWT Session Management**: Token blacklist di Redis untuk penanganan logout seketika (*instant revocation*).
 
@@ -67,7 +69,7 @@ be-muslim-app/
 │   ├── config/                 # Config Database (PG + PostGIS), Redis, Socket.IO, & Multi-Env
 │   ├── controllers/            # Request Handlers (Auth, Post, Prayer, Masjid, Notification)
 │   ├── db/                     # Script Migrasi Database (npm run migration:up)
-│   ├── middlewares/            # Auth JWT, Input Sanitizer XSS, Upload Multer, Global Error Handler
+│   ├── middlewares/            # Auth JWT, Input Sanitizer XSS, Rate Limiter Granular, Error Handler
 │   ├── models/                 # Interfaces & Data Models
 │   ├── routes/                 # Routing Endpoint API Express v1
 │   ├── schedulers/             # Cron Job Adzan & Daily Data Retention Cleanup
