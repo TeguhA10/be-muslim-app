@@ -388,7 +388,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  static async getUserProfile(userId: string) {
+  static async getUserProfile(userId: string, timezone?: string) {
     const userRes = await pool.query(
       `SELECT id, name, email, avatar_url, gender, birth_date::text AS birth_date, bio, created_at, is_verified FROM users WHERE id = $1`,
       [userId]
@@ -401,7 +401,7 @@ export class AuthService {
     );
 
     const postsCountRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM posts WHERE user_id = $1 AND deleted_at IS NULL`, [userId]);
-    const todayStr = getLocalDateStr();
+    const todayStr = getLocalDateStr(new Date(), timezone);
     const prayerLogRes = await pool.query(
       `SELECT COUNT(*)::INT AS count FROM prayer_log WHERE user_id = $1 AND (date = CURRENT_DATE OR date = $2::date) AND completed = true`,
       [userId, todayStr]
@@ -572,7 +572,7 @@ export class AuthService {
             entityType: 'USER',
             entityId: followerId,
           });
-        } catch (err) {}
+        } catch (err) { }
       })();
     }
 

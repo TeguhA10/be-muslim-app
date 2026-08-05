@@ -128,7 +128,8 @@ export class AuthController {
   static async getProfile(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.id || '11111111-1111-1111-1111-111111111111';
-      const result = await AuthService.getUserProfile(userId);
+      const timezone = req.headers['x-timezone'] as string || '';
+      const result = await AuthService.getUserProfile(userId, timezone);
       sendSuccess(res, 'User profile fetched', result);
     } catch (error: any) {
       next(error);
