@@ -61,9 +61,17 @@ export class NotificationModel {
     entity_id?: string;
   }): Promise<Notification> {
     const query = `
-      INSERT INTO notifications (recipient_id, actor_id, type, title, body, entity_type, entity_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
+      WITH new_notif AS (
+        INSERT INTO notifications (recipient_id, actor_id, type, title, body, entity_type, entity_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *
+      )
+      SELECT 
+        n.*,
+        u.name as actor_name,
+        u.avatar_url as actor_avatar
+      FROM new_notif n
+      LEFT JOIN users u ON n.actor_id = u.id
     `;
     const values = [
       data.recipient_id,

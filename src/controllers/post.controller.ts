@@ -86,6 +86,7 @@ export class PostController {
     try {
       const userId = req.user?.id || (req.query.user_id as any) || '11111111-1111-1111-1111-111111111111';
       const authorId = (req.query.author_id as string) || (req.query.target_user_id as string) || undefined;
+      const postId = (req.query.id as string) || (req.query.post_id as string) || undefined;
       const limit = parseInt((req.query.limit as string) || '20', 10);
       const offset = parseInt((req.query.offset as string) || '0', 10);
       const sort = (req.query.sort as any) || 'terbaru';
@@ -94,7 +95,7 @@ export class PostController {
       const category = (req.query.category as string) || 'semua';
       const followingOnly = req.query.following === 'true' || req.query.following_only === 'true';
 
-      const feed = await PostService.getFeed(userId, limit, offset, sort, media, search, category, followingOnly, authorId);
+      const feed = await PostService.getFeed(userId, limit, offset, sort, media, search, category, followingOnly, authorId, postId);
       sendSuccess(res, 'Feed fetched successfully', feed);
     } catch (error: any) {
       next(error);

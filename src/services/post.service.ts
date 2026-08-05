@@ -1,6 +1,7 @@
 import { pool } from '../config/database';
 import { Post, PostComment } from '../models';
 import { NotificationService } from './notification.service';
+import { logger } from '../utils/logger';
 
 export class PostService {
   static async createPost(
@@ -98,12 +99,19 @@ export class PostService {
     search = '',
     category = 'semua',
     followingOnly = false,
-    authorId?: string
+    authorId?: string,
+    postId?: string
   ) {
     const params: any[] = [currentUserId || null];
     let paramIndex = 2;
 
     let whereClause = 'WHERE p.deleted_at IS NULL AND p.is_purged = FALSE';
+
+    if (postId) {
+      whereClause += ` AND p.id = $${paramIndex}`;
+      params.push(postId);
+      paramIndex++;
+    }
 
     if (authorId) {
       whereClause += ` AND p.user_id = $${paramIndex}`;
@@ -242,7 +250,9 @@ export class PostService {
               entityId: postId,
             });
           }
-        } catch (err) {}
+        } catch (err: any) {
+          logger.error(`[PostService.toggleLike] Notification error: ${err.message}`);
+        }
       })();
 
       return { liked: true };
@@ -406,7 +416,9 @@ export class PostService {
             });
           }
         }
-      } catch (err) {}
+      } catch (err: any) {
+        logger.error(`[PostService.addComment] Notification error: ${err.message}`);
+      }
     })();
 
     return newComment;
