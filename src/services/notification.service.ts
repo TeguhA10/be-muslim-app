@@ -17,37 +17,39 @@ export class NotificationService {
     if (!pushToken) return false;
 
     try {
-      // Check if it's an Expo push token
-      if (pushToken.startsWith('ExponentPushToken[') || pushToken.startsWith('ExpoPushToken[')) {
-        logger.info(`[PushNotification] Sending Expo push to token ${pushToken.substring(0, 25)}... | Title: ${title}`);
-        await axios.post(
-          'https://exp.host/--/api/v2/push/send',
-          {
-            to: pushToken,
-            sound: 'default',
-            title,
-            body,
-            data: data || {},
-            priority: 'high',
-            channelId: 'social-interactions-channel',
+      logger.info(`[PushNotification] Sending push to token ${pushToken.substring(0, 25)}... | Title: ${title}`);
+      
+      const res = await axios.post(
+        'https://exp.host/--/api/v2/push/send',
+        {
+          to: pushToken,
+          sound: 'default',
+          title,
+          body,
+          data: data || {},
+          priority: 'high',
+          channelId: 'social-interactions-channel',
+        },
+        {
+          headers: {
+            Accept: 'application/json',
+            'Accept-encoding': 'gzip, deflate',
+            'Content-Type': 'application/json',
           },
-          {
-            headers: {
-              Accept: 'application/json',
-              'Accept-encoding': 'gzip, deflate',
-              'Content-Type': 'application/json',
-            },
-            timeout: 5000,
-          }
-        );
-        return true;
+          timeout: 5000,
+        }
+      );
+
+      const status = res.data?.data?.[0]?.status;
+      if (status === 'error') {
+        logger.error(`[PushNotification] Expo push error: ${res.data?.data?.[0]?.message || 'Unknown error'}`);
+        return false;
       }
 
-      // Mock/FCM fallback for non-Expo tokens
-      logger.info(`[PushNotification] Sending push to ${pushToken.substring(0, 15)}... | Title: ${title}`);
+      logger.info(`[PushNotification] Push delivered successfully to Expo gateway`);
       return true;
     } catch (error: any) {
-      logger.error(`[PushNotification] Push failed: ${error?.response?.data || error.message}`);
+      logger.error(`[PushNotification] Push failed: ${error?.response?.data ? JSON.stringify(error.response.data) : error.message}`);
       return false;
     }
   }
@@ -92,6 +94,8 @@ export class NotificationService {
           entityId: params.entityId,
           type: params.type,
         });
+      } else {
+        logger.info(`[NotificationService] Recipient ${params.recipientId} has no registered push token yet`);
       }
 
       // 4. Emit real-time WebSocket event to active client session
