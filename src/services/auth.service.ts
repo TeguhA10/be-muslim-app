@@ -402,9 +402,8 @@ export class AuthService {
 
     const postsCountRes = await pool.query(`SELECT COUNT(*)::INT AS count FROM posts WHERE user_id = $1 AND deleted_at IS NULL`, [userId]);
     const todayStr = getLocalDateStr(new Date(), timezone);
-    console.log('[Service] Today string:', todayStr);
     const prayerLogRes = await pool.query(
-      `SELECT COUNT(*)::INT AS count FROM prayer_log WHERE user_id = $1 AND (date = CURRENT_DATE OR date = $2::date) AND completed = true`,
+      `SELECT COUNT(*)::INT AS count FROM prayer_log WHERE user_id = $1 AND date = $2::date AND completed = true`,
       [userId, todayStr]
     );
 
