@@ -378,11 +378,15 @@ export class AuthService {
   }
 
   /**
-   * Helper: Generate Access Token (1h) & Refresh Token (30d)
+   * Helper: Generate Access Token & Refresh Token using values from .env
    */
   private static async generateTokenPair(userId: string, email: string) {
-    const accessToken = jwt.sign({ id: userId, email }, ENV.JWT.SECRET, { expiresIn: '1h' });
-    const refreshToken = jwt.sign({ id: userId, email, type: 'refresh' }, ENV.JWT.REFRESH_SECRET, { expiresIn: '30d' });
+    const accessToken = jwt.sign({ id: userId, email }, ENV.JWT.SECRET, {
+      expiresIn: (ENV.JWT.EXPIRES_IN || '1h') as any,
+    });
+    const refreshToken = jwt.sign({ id: userId, email, type: 'refresh' }, ENV.JWT.REFRESH_SECRET, {
+      expiresIn: (ENV.JWT.REFRESH_EXPIRES_IN || '30d') as any,
+    });
 
     const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
     await pool.query(
