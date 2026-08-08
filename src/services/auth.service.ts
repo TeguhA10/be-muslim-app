@@ -333,9 +333,14 @@ export class AuthService {
 
     let payload: any;
     try {
-      payload = jwt.verify(refreshToken, ENV.JWT.SECRET);
+      payload = jwt.verify(refreshToken, ENV.JWT.REFRESH_SECRET);
     } catch (e) {
-      throw new Error('Refresh Token tidak sah.');
+      // Fallback verification with JWT.SECRET for backward compatibility
+      try {
+        payload = jwt.verify(refreshToken, ENV.JWT.SECRET);
+      } catch (err) {
+        throw new Error('Refresh Token tidak sah.');
+      }
     }
 
     // Delete old refresh token & issue new pair
@@ -373,13 +378,13 @@ export class AuthService {
   }
 
   /**
-   * Helper: Generate Access Token (1h) & Refresh Token (7d)
+   * Helper: Generate Access Token (1h) & Refresh Token (30d)
    */
   private static async generateTokenPair(userId: string, email: string) {
     const accessToken = jwt.sign({ id: userId, email }, ENV.JWT.SECRET, { expiresIn: '1h' });
-    const refreshToken = jwt.sign({ id: userId, email, type: 'refresh' }, ENV.JWT.SECRET, { expiresIn: '7d' });
+    const refreshToken = jwt.sign({ id: userId, email, type: 'refresh' }, ENV.JWT.REFRESH_SECRET, { expiresIn: '30d' });
 
-    const refreshExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const refreshExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
     await pool.query(
       `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)`,
       [userId, refreshToken, refreshExpiresAt]

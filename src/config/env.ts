@@ -23,7 +23,9 @@ export const ENV = {
   },
   JWT: {
     SECRET: process.env.JWT_SECRET || 'default_jwt_secret',
-    EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+    REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'default_jwt_refresh_secret',
+    EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1h',
+    REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
   },
   EXTERNAL_API: {
     ALADHAN: process.env.ALADHAN_API_BASE_URL || 'https://api.aladhan.com/v1',
